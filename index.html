@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <title>BetInsight KI · Analyseplattform</title>
+  <style>
+    :root {
+      --bg: #031822;
+      --panel: #082735;
+      --panel-2: #0c3242;
+      --text: #f4f8fb;
+      --muted: #a9bcc7;
+      --blue: #2b8cff;
+      --green: #25c879;
+      --gold: #f0b84b;
+      --border: rgba(255,255,255,.10);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top right, rgba(43,140,255,.16), transparent 34rem),
+        linear-gradient(180deg, #02151e 0%, var(--bg) 100%);
+    }
+    .wrap { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding: 34px 0 56px; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 48px; }
+    .brand { font-weight: 800; letter-spacing: .02em; font-size: 1.18rem; }
+    .brand span { color: var(--green); }
+    .badge {
+      display: inline-flex; align-items: center; gap: 8px; padding: 9px 13px;
+      border: 1px solid var(--border); border-radius: 999px; color: var(--muted);
+      background: rgba(255,255,255,.035); font-size: .88rem;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 14px rgba(240,184,75,.65); }
+    .hero { max-width: 790px; margin-bottom: 34px; }
+    .eyebrow { color: var(--green); font-weight: 750; text-transform: uppercase; letter-spacing: .12em; font-size: .78rem; }
+    h1 { margin: 12px 0 16px; font-size: clamp(2.25rem, 6vw, 4.7rem); line-height: .98; letter-spacing: -.045em; }
+    .lead { margin: 0; color: var(--muted); font-size: clamp(1rem, 2.2vw, 1.2rem); line-height: 1.65; max-width: 720px; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 32px; }
+    .card { padding: 22px; border: 1px solid var(--border); border-radius: 18px; background: linear-gradient(180deg, rgba(12,50,66,.88), rgba(8,39,53,.88)); min-height: 178px; }
+    .card h2 { font-size: 1rem; margin: 0 0 12px; }
+    .card p { margin: 0; color: var(--muted); line-height: 1.55; font-size: .94rem; }
+    .state { margin-top: 20px; display: inline-flex; padding: 7px 10px; border-radius: 9px; background: rgba(255,255,255,.055); color: #dce7ed; font-size: .78rem; font-weight: 700; }
+    .flow { margin-top: 18px; padding: 22px; border: 1px solid var(--border); border-radius: 18px; background: rgba(255,255,255,.025); }
+    .flow-title { font-weight: 800; margin-bottom: 14px; }
+    .flow-line { color: var(--muted); line-height: 1.8; word-break: break-word; }
+    .notice { margin-top: 18px; padding: 16px 18px; border-left: 3px solid var(--blue); background: rgba(43,140,255,.07); border-radius: 0 12px 12px 0; color: #cfe1ed; line-height: 1.55; }
+    footer { margin-top: 42px; color: rgba(255,255,255,.42); font-size: .82rem; }
+    @media (max-width: 800px) {
+      .topbar { align-items: flex-start; flex-direction: column; margin-bottom: 36px; }
+      .grid { grid-template-columns: 1fr; }
+      .card { min-height: 0; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="topbar">
+      <div class="brand">BetInsight<span>.Club</span> · KI</div>
+      <div class="badge"><span class="dot"></span> Technische Aufbauphase</div>
+    </div>
+
+    <section class="hero">
+      <div class="eyebrow">Analyse- und Datenplattform</div>
+      <h1>BetInsight KI</h1>
+      <p class="lead">Die neue, getrennte Arbeitsoberfläche für Fußball-Daten, historische Analysen, Modell-Features und spätere Backtests. Diese Umgebung wird unabhängig von der bestehenden Mitglieder-App aufgebaut.</p>
+    </section>
+
+    <section class="grid" aria-label="Projektstatus">
+      <article class="card">
+        <h2>Datenimport</h2>
+        <p>Fußball-Datenanbieter werden zunächst im Testbetrieb geprüft. Noch ist kein produktiver Anbieter angebunden.</p>
+        <span class="state">Noch nicht verbunden</span>
+      </article>
+      <article class="card">
+        <h2>PostgreSQL-Datenbank</h2>
+        <p>Historische Spiele, Quoten, Teams, Spieler, Trainer und Modell-Features sollen später strukturiert serverseitig gespeichert werden.</p>
+        <span class="state">Architekturphase</span>
+      </article>
+      <article class="card">
+        <h2>Modell &amp; Freigabe</h2>
+        <p>Berechnungen und Backtests bleiben getrennt vom bestehenden BetInsight-Tippsystem und werden erst nach Prüfung angebunden.</p>
+        <span class="state">Noch nicht verbunden</span>
+      </article>
+    </section>
+
+    <section class="flow">
+      <div class="flow-title">Geplante technische Kette</div>
+      <div class="flow-line">Football-Datenanbieter → Import/Backend → PostgreSQL-Datenbank → Feature-/Modellberechnung → ki.betinsight.club → Freigabe → bestehendes BetInsight-Tippsystem</div>
+    </section>
+
+    <div class="notice">Sicherheitsstatus: Auf dieser Seite werden keine API-Schlüssel oder Datenbank-Secrets gespeichert. Produktive BetInsight-Systeme, Make-Szenarien und Google-Sheets-Strukturen sind nicht mit dieser Aufbauphase verbunden.</div>
+
+    <footer>© 2026 BetInsight Club · KI-/Datenplattform</footer>
+  </main>
+</body>
+</html>
