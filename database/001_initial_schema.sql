@@ -219,13 +219,8 @@ create table if not exists analysis.backtest_bets (
   result text check (result in ('win','loss','push','void','pending','no_bet')),
   pnl_units numeric(12,4),
   reason jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default now(),
-  check (decision_time_utc <= (select kickoff_utc from analysis.fixtures where id = fixture_id))
+  created_at timestamptz not null default now()
 );
-
--- PostgreSQL CHECK constraints cannot safely use a subquery in all managed environments.
--- Replace the previous time-order rule with a trigger in a later migration if required.
--- The DDL above is intentionally kept provider-portable; remove/recreate the constraint if the provider rejects it.
 
 create table if not exists analysis.analysis_candidates (
   id bigint generated always as identity primary key,
@@ -245,6 +240,68 @@ create table if not exists analysis.analysis_candidates (
   published_at timestamptz,
   payload jsonb not null default '{}'::jsonb
 );
+
+-- -------------------------
+-- Chronology safeguards
+-- -------------------------
+
+create or replace function analysis.enforce_feature_asof_before_kickoff()
+returns trigger
+language plpgsql
+as $$
+declare
+  v_kickoff timestamptz;
+begin
+  select kickoff_utc into v_kickoff
+  from analysis.fixtures
+  where id = new.fixture_id;
+
+  if v_kickoff is null then
+    raise exception 'Fixture % not found', new.fixture_id;
+  end if;
+
+  if new.as_of_utc > v_kickoff then
+    raise exception 'Feature as_of_utc (%) is after kickoff (%) for fixture %', new.as_of_utc, v_kickoff, new.fixture_id;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_feature_asof_before_kickoff on analysis.feature_snapshots;
+create trigger trg_feature_asof_before_kickoff
+before insert or update of fixture_id, as_of_utc
+on analysis.feature_snapshots
+for each row execute function analysis.enforce_feature_asof_before_kickoff();
+
+create or replace function analysis.enforce_decision_before_kickoff()
+returns trigger
+language plpgsql
+as $$
+declare
+  v_kickoff timestamptz;
+begin
+  select kickoff_utc into v_kickoff
+  from analysis.fixtures
+  where id = new.fixture_id;
+
+  if v_kickoff is null then
+    raise exception 'Fixture % not found', new.fixture_id;
+  end if;
+
+  if new.decision_time_utc > v_kickoff then
+    raise exception 'Backtest decision_time_utc (%) is after kickoff (%) for fixture %', new.decision_time_utc, v_kickoff, new.fixture_id;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_decision_before_kickoff on analysis.backtest_bets;
+create trigger trg_decision_before_kickoff
+before insert or update of fixture_id, decision_time_utc
+on analysis.backtest_bets
+for each row execute function analysis.enforce_decision_before_kickoff();
 
 -- -------------------------
 -- Future v0.5 entities
