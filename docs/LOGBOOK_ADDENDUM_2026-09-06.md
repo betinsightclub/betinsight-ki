@@ -86,7 +86,7 @@ Ein historischer Bundesliga-Fixture vom 23.08.2024 lieferte über `/odds` keine 
 
 ### Free-Plan-Status
 
-Ein zusätzlicher Live-Test bestätigte: API-Football verlangt bei liga-spezifischen Pre-Match-Odds den Season-Parameter; Saison 2026 wird im Free-Plan blockiert. Das Bundesliga-Pilotprofil bleibt deshalb technisch auf `prepared` und wird noch nicht automatisch aktiviert.
+Ein zusätzlicher Live-Test bestätigte: API-Football verlangt bei liga-spezifischen Pre-Match-Odds den Season-Parameter; Saison 2026 wird im Free-Plan blockiert. Das ursprüngliche API-Football-Pilotprofil bleibt deshalb nur als vorbereitete Alternative bestehen.
 
 ### Neue Tabellen / Funktion
 
@@ -97,6 +97,55 @@ Ein zusätzlicher Live-Test bestätigte: API-Football verlangt bei liga-spezifis
 
 Es wurde keine automatische kostenpflichtige Nutzung eingerichtet.
 
+## Änderung 5 – The Odds API als zweite Odds-Quelle getestet und Bundesliga-Pilot aktiviert
+
+### Free-Test
+
+The Odds API wurde als zweite Datenquelle registriert. Der Schlüssel liegt ausschließlich im Supabase Vault unter `the_odds_api_key`.
+
+Live bestätigt:
+
+- Bundesliga: `soccer_germany_bundesliga`
+- 2. Bundesliga: `soccer_germany_bundesliga2`
+- 3. Liga: `soccer_germany_liga3`
+
+Für die Bundesliga lieferte ein EU-Regionsabruf mit `h2h` und `totals` 11 aktuelle/kommende Spiele und 24 Buchmacher. Zusätzlich wurden `btts` und `alternate_totals` erfolgreich getestet.
+
+Die Alternate Totals enthielten u. a. 0.5, 1.5, 2.5, 3.5 und 4.5 und decken damit die für BetInsight relevanten Over/Under-Linien grundsätzlich ab.
+
+### Erster echter Spieltags-Snapshot
+
+Ziel-Spieltag: 11.–13.09.2026.
+
+`first_observed` wurde am 06.09.2026 für alle 9 Zielspiele gespeichert:
+
+- 9 erfolgreiche Captures
+- 0 Fehler
+- 0 leere Captures
+- 18 bis 20 Buchmacher je Spiel
+- Märkte: `h2h`, `totals`, `btts`, `alternate_totals`; bei Exchanges zusätzlich `h2h_lay`
+
+Der Snapshot-Lauf verbrauchte 36 Credits. Einschließlich der vorherigen Tests waren danach 40 von 500 Monats-Credits verbraucht; 460 blieben verfügbar.
+
+### Automatisierung
+
+Supabase Cron wurde aktiviert.
+
+Job: `betinsight_bundesliga_odds_pilot_due`
+
+- läuft technisch alle 10 Minuten
+- bis 10.09.2026 17:30 UTC nur Wartestatus, keine Odds-Abfragen
+- danach werden nur tatsächlich fällige `t_minus_24h`, `t_minus_3h` und `t_minus_30m` Captures geschrieben
+- bereits erfolgreiche Stufen werden nicht erneut abgefragt
+- nach 14.09.2026 02:00 UTC wird das Pilotprofil auf `completed` gesetzt und der Cron-Job selbstständig entfernt
+
+### Anbietertrennung
+
+- The Odds API: aktueller Odds-Pilot.
+- API-Football: weiterhin für Fixtures, Spieler, Trainer, Transfers, Lineups und weitere Fußballdaten vorgesehen.
+- Historische Master-Odds werden nicht überschrieben.
+- Historical Odds von The Odds API sind im Free-Plan nicht enthalten und werden erst bei einer bewussten späteren Tarifentscheidung geprüft.
+
 ## Auswirkungen auf bestehendes BetInsight
 
 Keine. Es wurde keine Verbindung zu `app.betinsight.club`, Make, Google Sheets oder bestehenden produktiven Repositories hergestellt.
@@ -106,6 +155,7 @@ Keine. Es wurde keine Verbindung zu `app.betinsight.club`, Make, Google Sheets o
 - `docs/ARCHITECTURE_v0.1.md`
 - `docs/DATA_MODEL_v0.1.md`
 - `docs/API_FOOTBALL_FREE_TEST_2026-09-06.md`
+- `docs/THE_ODDS_API_FREE_TEST_2026-09-06.md`
 - `docs/ODDS_CAPTURE_PILOT_v0.1.md`
 - `database/001_initial_schema.sql`
 - `database/002_seed_v04.sql`
@@ -113,7 +163,11 @@ Keine. Es wurde keine Verbindung zu `app.betinsight.club`, Make, Google Sheets o
 - `database/003_api_football_probe_support.sql`
 - `database/004_fix_api_football_http_headers.sql`
 - `database/005_odds_capture_pilot_provider_neutral.sql`
+- `database/006_the_odds_api_probe_support.sql`
+- `database/007_the_odds_api_bundesliga_pilot_capture.sql`
+- `database/008_enable_supabase_cron_for_odds_pilot.sql`
+- `database/009_schedule_bundesliga_odds_pilot.sql`
 
 ## Nächster Schritt
 
-Noch keine kostenpflichtige Aktivierung. Als nächstes die Provider-Optionen für den aktuellen Bundesliga-Spieltag vergleichen: entweder günstiges API-Football-Upgrade oder ein zweiter Anbieter mit aktuellem Fixture-/Pre-Match-Odds-Zugriff. Die vorbereitete Capture-Pipeline bleibt dafür unverändert. Parallel kann der historische Master kontrolliert über Staging importiert werden. Der Backtest v0.4 und insbesondere der 2025/26-Hold-out bleiben davon unberührt.
+Den automatischen Bundesliga-Pilot bis nach dem Spieltag 11.–13.09.2026 laufen lassen und anschließend Vollständigkeit, tatsächliche Capture-Zeitpunkte, Buchmacherabdeckung und Quotenbewegungen vergleichen. Parallel kann der historische Master kontrolliert über Staging importiert werden. Keine Tarifentscheidung vor Auswertung des kostenlosen Piloten. Der Backtest v0.4 und insbesondere der 2025/26-Hold-out bleiben davon unberührt.
