@@ -73,6 +73,30 @@ Ein historischer Bundesliga-Fixture vom 23.08.2024 lieferte über `/odds` keine 
 
 **Konsequenz:** API-Football kann fehlende historische BetInsight-Odds aus mehreren Jahren nicht rückwirkend ersetzen. Für zukünftige Analysen müssen Pre-Match- und Live-Odds ab dem Startzeitpunkt selbst in PostgreSQL als zeitgestempelte Snapshots gespeichert werden. Opening und Closing bleiben strikt getrennt.
 
+## Änderung 4 – Anbieterneutraler Bundesliga-Odds-Pilot vorbereitet
+
+### Entscheidung
+
+- Zunächst nur ein kompletter Bundesliga-Spieltag als Pilot.
+- Vier Pre-Match-Capture-Stufen: `first_observed`, `t_minus_24h`, `t_minus_3h`, `t_minus_30m`.
+- `first_observed` wird ausdrücklich nicht automatisch als Opening Odds bezeichnet.
+- Der tatsächlich letzte Snapshot vor Kickoff wird später aus `captured_at` abgeleitet und nicht künstlich als Closing umetikettiert.
+- Rohantworten werden zuerst unverändert gespeichert und erst danach normalisiert.
+- Die Capture-Struktur ist provider-neutral, damit später API-Football, ein zweiter Anbieter oder ein Upgrade ohne neues Datenmodell genutzt werden kann.
+
+### Free-Plan-Status
+
+Ein zusätzlicher Live-Test bestätigte: API-Football verlangt bei liga-spezifischen Pre-Match-Odds den Season-Parameter; Saison 2026 wird im Free-Plan blockiert. Das Bundesliga-Pilotprofil bleibt deshalb technisch auf `prepared` und wird noch nicht automatisch aktiviert.
+
+### Neue Tabellen / Funktion
+
+- `analysis.odds_capture_profiles`
+- `analysis.odds_capture_stages`
+- `analysis.odds_raw_snapshots`
+- `analysis.capture_api_football_fixture_odds(...)`
+
+Es wurde keine automatische kostenpflichtige Nutzung eingerichtet.
+
 ## Auswirkungen auf bestehendes BetInsight
 
 Keine. Es wurde keine Verbindung zu `app.betinsight.club`, Make, Google Sheets oder bestehenden produktiven Repositories hergestellt.
@@ -82,12 +106,14 @@ Keine. Es wurde keine Verbindung zu `app.betinsight.club`, Make, Google Sheets o
 - `docs/ARCHITECTURE_v0.1.md`
 - `docs/DATA_MODEL_v0.1.md`
 - `docs/API_FOOTBALL_FREE_TEST_2026-09-06.md`
+- `docs/ODDS_CAPTURE_PILOT_v0.1.md`
 - `database/001_initial_schema.sql`
 - `database/002_seed_v04.sql`
 - `database/002_harden_trigger_search_path.sql`
 - `database/003_api_football_probe_support.sql`
 - `database/004_fix_api_football_http_headers.sql`
+- `database/005_odds_capture_pilot_provider_neutral.sql`
 
 ## Nächster Schritt
 
-Den Master-Datensatz zunächst in eine kontrollierte Import-/Staging-Pipeline übernehmen und vor Normalisierung die Kickoff-Zeitzonen der Quelle verifizieren. Parallel die laufende API-Football-Ingestion so planen, dass Odds-Snapshots zukünftig selbst gespeichert werden. Der Backtest v0.4 und insbesondere der 2025/26-Hold-out bleiben davon unberührt.
+Noch keine kostenpflichtige Aktivierung. Als nächstes die Provider-Optionen für den aktuellen Bundesliga-Spieltag vergleichen: entweder günstiges API-Football-Upgrade oder ein zweiter Anbieter mit aktuellem Fixture-/Pre-Match-Odds-Zugriff. Die vorbereitete Capture-Pipeline bleibt dafür unverändert. Parallel kann der historische Master kontrolliert über Staging importiert werden. Der Backtest v0.4 und insbesondere der 2025/26-Hold-out bleiben davon unberührt.
