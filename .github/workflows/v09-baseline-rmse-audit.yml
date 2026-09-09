@@ -16,98 +16,66 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: research/v09-h2-audit
-
       - name: Download original database
         run: |
-          set -euxo pipefail
           mkdir -p /tmp/v09db research
           curl -L --fail --retry 3 https://raw.githubusercontent.com/PranavSitaraman/NBA-Injury-Betting/main/basketball-final.sqlite.zip -o /tmp/v09db/db.zip
           unzip -o /tmp/v09db/db.zip -d /tmp/v09db
-
       - name: Install dependencies
         run: python -m pip install --disable-pip-version-check pandas numpy
-
-      - name: Compare exact baseline RMSE conventions and filters
+      - name: Identify exact v0.9 clean sample
         run: |
           python - <<'PY'
           import json, sqlite3
           from pathlib import Path
           import numpy as np
           import pandas as pd
-
-          con = sqlite3.connect('/tmp/v09db/basketball-final.sqlite')
-          b = pd.read_sql_query('''
-            SELECT GAME_ID, Date, HomeSpread_AtOpen, HomeSpread_AtClose,
-                   Over_AtOpen, Over_AtClose, `2H_HomeSpread`, `2H_Over`
-            FROM BettingOdds_History
-          ''', con)
-          regular = pd.read_sql_query('SELECT GAME_ID FROM Game', con).drop_duplicates('GAME_ID')
-          q = pd.read_sql_query('''
-            SELECT GAME_ID,
-                   PTS_QTR1_HOME, PTS_QTR2_HOME, PTS_QTR3_HOME, PTS_QTR4_HOME,
-                   PTS_QTR1_AWAY, PTS_QTR2_AWAY, PTS_QTR3_AWAY, PTS_QTR4_AWAY,
-                   PTS_HOME_y, PTS_AWAY
-            FROM Game_FullDetails
-          ''', con).drop_duplicates('GAME_ID')
+          con=sqlite3.connect('/tmp/v09db/basketball-final.sqlite')
+          b=pd.read_sql_query('SELECT GAME_ID,Date,HomeTeam,AwayTeam,HomeSpread_AtOpen,HomeSpread_AtClose,Over_AtOpen,Over_AtClose,`2H_HomeSpread`,`2H_Over` FROM BettingOdds_History',con)
+          r=pd.read_sql_query('SELECT DISTINCT GAME_ID FROM Game',con)
+          q=pd.read_sql_query('SELECT GAME_ID,PTS_QTR1_HOME,PTS_QTR2_HOME,PTS_QTR1_AWAY,PTS_QTR2_AWAY,PTS_HOME_y,PTS_AWAY FROM Game_FullDetails',con).drop_duplicates('GAME_ID')
           con.close()
-
-          b['Date'] = pd.to_datetime(b['Date'], errors='coerce')
-          odds_cols = ['HomeSpread_AtOpen','HomeSpread_AtClose','Over_AtOpen','Over_AtClose','2H_HomeSpread','2H_Over']
-          for c in odds_cols: b[c] = pd.to_numeric(b[c], errors='coerce')
+          b['Date']=pd.to_datetime(b.Date,errors='coerce')
+          odds=['HomeSpread_AtOpen','HomeSpread_AtClose','Over_AtOpen','Over_AtClose','2H_HomeSpread','2H_Over']
+          for c in odds:b[c]=pd.to_numeric(b[c],errors='coerce')
           for c in q.columns:
-              if c != 'GAME_ID': q[c] = pd.to_numeric(q[c], errors='coerce')
-
-          m = b.merge(regular, on='GAME_ID', how='inner').merge(q, on='GAME_ID', how='inner')
-          m['ht_margin'] = (m.PTS_QTR1_HOME + m.PTS_QTR2_HOME) - (m.PTS_QTR1_AWAY + m.PTS_QTR2_AWAY)
-          m['ht_total'] = (m.PTS_QTR1_HOME + m.PTS_QTR2_HOME) + (m.PTS_QTR1_AWAY + m.PTS_QTR2_AWAY)
-          m['actual_noot'] = (m.PTS_QTR3_HOME + m.PTS_QTR4_HOME) - (m.PTS_QTR3_AWAY + m.PTS_QTR4_AWAY)
-          m['actual_withot'] = (m.PTS_HOME_y - m.PTS_AWAY) - m['ht_margin']
-          m['expected_from_spread'] = -m['2H_HomeSpread']
-          m['line_as_expected'] = m['2H_HomeSpread']
-
-          targets = {
-            '2017/18': {'n':1230,'rmse':9.883179436414059},
-            '2018/19': {'n':1230,'rmse':10.19949385002746},
-            '2019/20': {'n':1054,'rmse':10.337244979978518},
-            '2020/21': {'n':1075,'rmse':10.484913874395364},
-            '2021/22_partial': {'n':454,'rmse':10.785751740306479},
+            if c!='GAME_ID':q[c]=pd.to_numeric(q[c],errors='coerce')
+          m=b.merge(r,on='GAME_ID').merge(q,on='GAME_ID')
+          m['ht_margin']=(m.PTS_QTR1_HOME+m.PTS_QTR2_HOME)-(m.PTS_QTR1_AWAY+m.PTS_QTR2_AWAY)
+          m['actual_withot']=(m.PTS_HOME_y-m.PTS_AWAY)-m.ht_margin
+          m['expected']=-m['2H_HomeSpread']
+          periods={'2017/18':('2017-07-01','2018-07-01',1230,9.883179436414059),'2018/19':('2018-07-01','2019-07-01',1230,10.19949385002746),'2019/20':('2019-07-01','2020-10-01',1054,10.337244979978518),'2020/21':('2020-10-01','2021-08-01',1075,10.484913874395364),'2021/22_partial':('2021-08-01','2021-12-21',454,10.785751740306479)}
+          req=['HomeSpread_AtOpen','HomeSpread_AtClose','Over_AtOpen','Over_AtClose','2H_HomeSpread','2H_Over','ht_margin','actual_withot']
+          filters={
+            'all_context_nonnull':lambda s:s.dropna(subset=req),
+            'h2_spread_nonzero':lambda s:s.dropna(subset=req)[lambda z:z['2H_HomeSpread']!=0],
+            'h2_total_nonzero':lambda s:s.dropna(subset=req)[lambda z:z['2H_Over']!=0],
+            'h2_both_nonzero':lambda s:s.dropna(subset=req)[lambda z:(z['2H_HomeSpread']!=0)&(z['2H_Over']!=0)],
+            'totals_nonzero':lambda s:s.dropna(subset=req)[lambda z:(z['Over_AtOpen']!=0)&(z['Over_AtClose']!=0)&(z['2H_Over']!=0)],
+            'all_odds_nonzero':lambda s:s.dropna(subset=req)[lambda z:(z[odds]!=0).all(axis=1)],
           }
-          periods = {
-            '2017/18': ('2017-07-01','2018-07-01'),
-            '2018/19': ('2018-07-01','2019-07-01'),
-            '2019/20': ('2019-07-01','2020-10-01'),
-            '2020/21': ('2020-10-01','2021-08-01'),
-            '2021/22_partial': ('2021-08-01','2021-12-21'),
-          }
-          score_cols = ['ht_margin','actual_noot','actual_withot']
-          filters = {
-            'baseline_only': ['2H_HomeSpread','actual_withot'],
-            'context_core': ['HomeSpread_AtClose','Over_AtOpen','Over_AtClose','2H_HomeSpread','2H_Over','ht_margin','ht_total','actual_withot'],
-            'context_all_odds': ['HomeSpread_AtOpen','HomeSpread_AtClose','Over_AtOpen','Over_AtClose','2H_HomeSpread','2H_Over','ht_margin','ht_total','actual_withot'],
-            'context_no_open_total': ['HomeSpread_AtClose','Over_AtClose','2H_HomeSpread','2H_Over','ht_margin','ht_total','actual_withot'],
-          }
-          out = {'rows_regular_joined': int(len(m)), 'filters': {}}
-          for fname, req in filters.items():
-              ff = {}
-              for season,(lo,hi) in periods.items():
-                  s = m[(m.Date >= lo) & (m.Date < hi)].dropna(subset=req)
-                  rmse = float(np.sqrt(np.mean((s.actual_withot-s.expected_from_spread)**2))) if len(s) else None
-                  t = targets[season]
-                  ff[season] = {
-                    'n': int(len(s)), 'target_n': t['n'], 'n_error': int(len(s)-t['n']),
-                    'rmse': rmse, 'target_rmse': t['rmse'],
-                    'rmse_abs_error': abs(rmse-t['rmse']) if rmse is not None else None
-                  }
-              out['filters'][fname] = ff
-
-          Path('research/v09_baseline_rmse_audit.json').write_text(json.dumps(out, indent=2), encoding='utf-8')
-          print(json.dumps(out, indent=2))
+          out={'filters':{},'zero_patterns':{}}
+          candidates=[]
+          for season,(lo,hi,tn,trmse) in periods.items():
+            raw=m[(m.Date>=lo)&(m.Date<hi)].copy()
+            clean=raw.dropna(subset=req)
+            zp={c:int((clean[c]==0).sum()) for c in odds}
+            out['zero_patterns'][season]=zp
+            for fname,fn in filters.items():
+              s=fn(raw)
+              rmse=float(np.sqrt(np.mean((s.actual_withot-s.expected)**2)))
+              out['filters'].setdefault(fname,{})[season]={'n':int(len(s)),'target_n':tn,'rmse':rmse,'target_rmse':trmse,'n_error':int(len(s)-tn),'rmse_error':float(rmse-trmse)}
+            zz=clean[(clean[odds]==0).any(axis=1)].copy()
+            if len(zz):
+              candidates.append(zz[['GAME_ID','Date','HomeTeam','AwayTeam']+odds])
+          if candidates: pd.concat(candidates).to_csv('research/v09_zero_odds_candidates.csv',index=False)
+          Path('research/v09_baseline_rmse_audit.json').write_text(json.dumps(out,indent=2),encoding='utf-8')
+          print(json.dumps(out,indent=2))
           PY
-
-      - name: Commit audit output
+      - name: Commit outputs
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add research/v09_baseline_rmse_audit.json
-          git commit -m "Refine exact v0.9 baseline RMSE filter audit" || exit 0
+          git add research/v09_baseline_rmse_audit.json research/v09_zero_odds_candidates.csv || true
+          git commit -m "Identify exact v0.9 zero-odds clean filter" || exit 0
           git push origin HEAD:research/v09-h2-audit
