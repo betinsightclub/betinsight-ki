@@ -1,0 +1,116 @@
+name: v0.9 missing-row fingerprint
+
+on:
+  push:
+    branches:
+      - research/v09-h2-audit
+
+permissions:
+  contents: write
+
+jobs:
+  solve:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/v09-h2-audit
+      - name: Download original database
+        run: |
+          mkdir -p /tmp/v09db research
+          curl -L --fail --retry 3 https://raw.githubusercontent.com/PranavSitaraman/NBA-Injury-Betting/main/basketball-final.sqlite.zip -o /tmp/v09db/db.zip
+          unzip -o /tmp/v09db/db.zip -d /tmp/v09db
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy
+      - name: Solve omitted rows from exact RMSE sums
+        run: |
+          python - <<'PY'
+          import json, sqlite3, itertools, math
+          from pathlib import Path
+          import numpy as np
+          import pandas as pd
+
+          con=sqlite3.connect('/tmp/v09db/basketball-final.sqlite')
+          b=pd.read_sql_query('SELECT GAME_ID,Date,HomeTeam,AwayTeam,HomeSpread_AtOpen,HomeSpread_AtClose,Over_AtOpen,Over_AtClose,`2H_HomeSpread`,`2H_Over`,HomeML,AwayML FROM BettingOdds_History',con)
+          r=pd.read_sql_query('SELECT DISTINCT GAME_ID FROM Game',con)
+          q=pd.read_sql_query('SELECT GAME_ID,PTS_QTR1_HOME,PTS_QTR2_HOME,PTS_QTR1_AWAY,PTS_QTR2_AWAY,PTS_HOME_y,PTS_AWAY FROM Game_FullDetails',con).drop_duplicates('GAME_ID')
+          con.close()
+          b['Date']=pd.to_datetime(b.Date,errors='coerce')
+          nums=['HomeSpread_AtOpen','HomeSpread_AtClose','Over_AtOpen','Over_AtClose','2H_HomeSpread','2H_Over']
+          for c in nums:b[c]=pd.to_numeric(b[c],errors='coerce')
+          for c in q.columns:
+            if c!='GAME_ID':q[c]=pd.to_numeric(q[c],errors='coerce')
+          m=b.merge(r,on='GAME_ID').merge(q,on='GAME_ID')
+          m['ht_margin']=(m.PTS_QTR1_HOME+m.PTS_QTR2_HOME)-(m.PTS_QTR1_AWAY+m.PTS_QTR2_AWAY)
+          m['actual_withot']=(m.PTS_HOME_y-m.PTS_AWAY)-m.ht_margin
+          m['expected']=-m['2H_HomeSpread']
+          m['baseline_err']=m.actual_withot-m.expected
+          m['sqerr']=m.baseline_err**2
+          req=['HomeSpread_AtOpen','HomeSpread_AtClose','Over_AtOpen','Over_AtClose','2H_HomeSpread','2H_Over','ht_margin','actual_withot']
+          periods={
+            '2019/20':('2019-07-01','2020-10-01',1054,10.337244979978518),
+            '2020/21':('2020-10-01','2021-08-01',1075,10.484913874395364),
+            '2021/22_partial':('2021-08-01','2021-12-21',454,10.785751740306479),
+          }
+          out={}
+          rows_out=[]
+          for season,(lo,hi,target_n,target_rmse) in periods.items():
+            s=m[(m.Date>=lo)&(m.Date<hi)].dropna(subset=req).copy().reset_index(drop=True)
+            k=len(s)-target_n
+            raw_sse=float(s.sqerr.sum())
+            target_sse=float(target_n*(target_rmse**2))
+            remove_sse=raw_sse-target_sse
+            # Squared errors are on half-point/integer grids. Convert to quarter-point units for exact subset sums.
+            vals=np.rint(s.sqerr.to_numpy()*4).astype(int)
+            target_units=int(round(remove_sse*4))
+            matches=[]
+            if k==2:
+              seen={}
+              for i,v in enumerate(vals):
+                need=target_units-v
+                if need in seen:
+                  for j in seen[need][:20]: matches.append((j,i))
+                seen.setdefault(v,[]).append(i)
+            elif k==4:
+              pairs={}
+              n=len(vals)
+              for i in range(n):
+                for j in range(i+1,n):
+                  sm=int(vals[i]+vals[j])
+                  pairs.setdefault(sm,[]).append((i,j))
+              for sm,ps in pairs.items():
+                comp=target_units-sm
+                if comp not in pairs: continue
+                for a in ps[:200]:
+                  for b2 in pairs[comp][:200]:
+                    inds=tuple(sorted(set(a+b2)))
+                    if len(inds)==4 and sum(vals[list(inds)])==target_units:
+                      if inds not in matches: matches.append(inds)
+                      if len(matches)>=100: break
+                  if len(matches)>=100: break
+                if len(matches)>=100: break
+            out[season]={
+              'raw_n':int(len(s)),'target_n':target_n,'remove_k':int(k),
+              'raw_rmse':float(np.sqrt(np.mean(s.sqerr))), 'target_rmse':target_rmse,
+              'raw_sse':raw_sse,'target_sse':target_sse,'remove_sse':remove_sse,
+              'target_quarter_units':target_units,'n_candidate_subsets_capped':len(matches),
+              'candidate_subsets':[]
+            }
+            inspect=['GAME_ID','Date','HomeTeam','AwayTeam','HomeSpread_AtOpen','HomeSpread_AtClose','Over_AtOpen','Over_AtClose','2H_HomeSpread','2H_Over','HomeML','AwayML','ht_margin','actual_withot','expected','baseline_err','sqerr']
+            for mi,inds in enumerate(matches[:20],1):
+              rr=s.loc[list(inds),inspect].copy()
+              out[season]['candidate_subsets'].append({'candidate':mi,'game_ids':rr.GAME_ID.astype(str).tolist(),'dates':rr.Date.astype(str).tolist(),'sqerr_sum':float(rr.sqerr.sum())})
+              rr.insert(0,'candidate',mi); rr.insert(0,'season',season)
+              rows_out.append(rr)
+          if rows_out: pd.concat(rows_out).to_csv('research/v09_missing_row_candidates.csv',index=False)
+          Path('research/v09_missing_row_fingerprint.json').write_text(json.dumps(out,indent=2),encoding='utf-8')
+          print(json.dumps(out,indent=2))
+          PY
+      - name: Commit outputs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/v09_missing_row_*
+          git commit -m "Record exact v0.9 omitted-row RMSE candidates" || exit 0
+          git push origin HEAD:research/v09-h2-audit
