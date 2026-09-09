@@ -1,0 +1,107 @@
+name: v0.9 baseline RMSE convention audit
+
+on:
+  push:
+    branches:
+      - research/v09-h2-audit
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/v09-h2-audit
+
+      - name: Download original database
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/v09db research
+          curl -L --fail --retry 3 https://raw.githubusercontent.com/PranavSitaraman/NBA-Injury-Betting/main/basketball-final.sqlite.zip -o /tmp/v09db/db.zip
+          unzip -o /tmp/v09db/db.zip -d /tmp/v09db
+
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy
+
+      - name: Compare exact baseline RMSE conventions
+        run: |
+          python - <<'PY'
+          import json, sqlite3
+          from pathlib import Path
+          import numpy as np
+          import pandas as pd
+
+          con = sqlite3.connect('/tmp/v09db/basketball-final.sqlite')
+          b = pd.read_sql_query('SELECT GAME_ID, Date, `2H_HomeSpread` FROM BettingOdds_History', con)
+          # Game is the regular-season game table; playoffs are stored separately as Game_Playoffs.
+          regular = pd.read_sql_query('SELECT GAME_ID FROM Game', con).drop_duplicates('GAME_ID')
+          q = pd.read_sql_query('''
+            SELECT GAME_ID,
+                   PTS_QTR1_HOME, PTS_QTR2_HOME, PTS_QTR3_HOME, PTS_QTR4_HOME,
+                   PTS_QTR1_AWAY, PTS_QTR2_AWAY, PTS_QTR3_AWAY, PTS_QTR4_AWAY,
+                   PTS_HOME_y, PTS_AWAY
+            FROM Game_FullDetails
+          ''', con).drop_duplicates('GAME_ID')
+          con.close()
+
+          b['Date'] = pd.to_datetime(b['Date'], errors='coerce')
+          b['2H_HomeSpread'] = pd.to_numeric(b['2H_HomeSpread'], errors='coerce')
+          for c in q.columns:
+              if c != 'GAME_ID': q[c] = pd.to_numeric(q[c], errors='coerce')
+
+          m = b.merge(regular, on='GAME_ID', how='inner').merge(q, on='GAME_ID', how='inner')
+          m['ht_margin'] = (m.PTS_QTR1_HOME + m.PTS_QTR2_HOME) - (m.PTS_QTR1_AWAY + m.PTS_QTR2_AWAY)
+          m['actual_noot'] = (m.PTS_QTR3_HOME + m.PTS_QTR4_HOME) - (m.PTS_QTR3_AWAY + m.PTS_QTR4_AWAY)
+          m['actual_withot'] = (m.PTS_HOME_y - m.PTS_AWAY) - m['ht_margin']
+          m['expected_from_spread'] = -m['2H_HomeSpread']
+          m['line_as_expected'] = m['2H_HomeSpread']
+
+          targets = {
+            '2017/18': 9.883179436414059,
+            '2018/19': 10.19949385002746,
+            '2019/20': 10.337244979978518,
+            '2020/21': 10.484913874395364,
+            '2021/22_partial': 10.785751740306479,
+          }
+          periods = {
+            '2017/18': ('2017-07-01','2018-07-01'),
+            '2018/19': ('2018-07-01','2019-07-01'),
+            '2019/20': ('2019-07-01','2020-10-01'),
+            '2020/21': ('2020-10-01','2021-08-01'),
+            '2021/22_partial': ('2021-08-01','2021-12-21'),
+          }
+          variants = [
+            ('noot_vs_negspread','actual_noot','expected_from_spread'),
+            ('withot_vs_negspread','actual_withot','expected_from_spread'),
+            ('noot_vs_posspread','actual_noot','line_as_expected'),
+            ('withot_vs_posspread','actual_withot','line_as_expected'),
+          ]
+          out = {'rows_regular_joined': int(len(m)), 'variants': {}}
+          for name, ac, ec in variants:
+              vv = {}
+              total_abs = 0.0
+              for season,(lo,hi) in periods.items():
+                  s = m[(m.Date >= lo) & (m.Date < hi)][['Date','2H_HomeSpread',ac,ec]].dropna()
+                  rmse = float(np.sqrt(np.mean((s[ac]-s[ec])**2))) if len(s) else None
+                  tgt = targets[season]
+                  err = abs(rmse-tgt) if rmse is not None else None
+                  total_abs += err or 0.0
+                  vv[season] = {'n': int(len(s)), 'rmse': rmse, 'target': tgt, 'abs_error': err}
+              vv['sum_abs_error'] = total_abs
+              out['variants'][name] = vv
+
+          Path('research/v09_baseline_rmse_audit.json').write_text(json.dumps(out, indent=2), encoding='utf-8')
+          print(json.dumps(out, indent=2))
+          PY
+
+      - name: Commit audit output
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/v09_baseline_rmse_audit.json
+          git commit -m "Record exact v0.9 baseline RMSE convention audit" || exit 0
+          git push origin HEAD:research/v09-h2-audit
