@@ -27,7 +27,7 @@ jobs:
       - name: Install dependencies
         run: python -m pip install --disable-pip-version-check pandas numpy
 
-      - name: Compare exact baseline RMSE conventions
+      - name: Compare exact baseline RMSE conventions and filters
         run: |
           python - <<'PY'
           import json, sqlite3
@@ -36,8 +36,11 @@ jobs:
           import pandas as pd
 
           con = sqlite3.connect('/tmp/v09db/basketball-final.sqlite')
-          b = pd.read_sql_query('SELECT GAME_ID, Date, `2H_HomeSpread` FROM BettingOdds_History', con)
-          # Game is the regular-season game table; playoffs are stored separately as Game_Playoffs.
+          b = pd.read_sql_query('''
+            SELECT GAME_ID, Date, HomeSpread_AtOpen, HomeSpread_AtClose,
+                   Over_AtOpen, Over_AtClose, `2H_HomeSpread`, `2H_Over`
+            FROM BettingOdds_History
+          ''', con)
           regular = pd.read_sql_query('SELECT GAME_ID FROM Game', con).drop_duplicates('GAME_ID')
           q = pd.read_sql_query('''
             SELECT GAME_ID,
@@ -49,23 +52,25 @@ jobs:
           con.close()
 
           b['Date'] = pd.to_datetime(b['Date'], errors='coerce')
-          b['2H_HomeSpread'] = pd.to_numeric(b['2H_HomeSpread'], errors='coerce')
+          odds_cols = ['HomeSpread_AtOpen','HomeSpread_AtClose','Over_AtOpen','Over_AtClose','2H_HomeSpread','2H_Over']
+          for c in odds_cols: b[c] = pd.to_numeric(b[c], errors='coerce')
           for c in q.columns:
               if c != 'GAME_ID': q[c] = pd.to_numeric(q[c], errors='coerce')
 
           m = b.merge(regular, on='GAME_ID', how='inner').merge(q, on='GAME_ID', how='inner')
           m['ht_margin'] = (m.PTS_QTR1_HOME + m.PTS_QTR2_HOME) - (m.PTS_QTR1_AWAY + m.PTS_QTR2_AWAY)
+          m['ht_total'] = (m.PTS_QTR1_HOME + m.PTS_QTR2_HOME) + (m.PTS_QTR1_AWAY + m.PTS_QTR2_AWAY)
           m['actual_noot'] = (m.PTS_QTR3_HOME + m.PTS_QTR4_HOME) - (m.PTS_QTR3_AWAY + m.PTS_QTR4_AWAY)
           m['actual_withot'] = (m.PTS_HOME_y - m.PTS_AWAY) - m['ht_margin']
           m['expected_from_spread'] = -m['2H_HomeSpread']
           m['line_as_expected'] = m['2H_HomeSpread']
 
           targets = {
-            '2017/18': 9.883179436414059,
-            '2018/19': 10.19949385002746,
-            '2019/20': 10.337244979978518,
-            '2020/21': 10.484913874395364,
-            '2021/22_partial': 10.785751740306479,
+            '2017/18': {'n':1230,'rmse':9.883179436414059},
+            '2018/19': {'n':1230,'rmse':10.19949385002746},
+            '2019/20': {'n':1054,'rmse':10.337244979978518},
+            '2020/21': {'n':1075,'rmse':10.484913874395364},
+            '2021/22_partial': {'n':454,'rmse':10.785751740306479},
           }
           periods = {
             '2017/18': ('2017-07-01','2018-07-01'),
@@ -74,25 +79,26 @@ jobs:
             '2020/21': ('2020-10-01','2021-08-01'),
             '2021/22_partial': ('2021-08-01','2021-12-21'),
           }
-          variants = [
-            ('noot_vs_negspread','actual_noot','expected_from_spread'),
-            ('withot_vs_negspread','actual_withot','expected_from_spread'),
-            ('noot_vs_posspread','actual_noot','line_as_expected'),
-            ('withot_vs_posspread','actual_withot','line_as_expected'),
-          ]
-          out = {'rows_regular_joined': int(len(m)), 'variants': {}}
-          for name, ac, ec in variants:
-              vv = {}
-              total_abs = 0.0
+          score_cols = ['ht_margin','actual_noot','actual_withot']
+          filters = {
+            'baseline_only': ['2H_HomeSpread','actual_withot'],
+            'context_core': ['HomeSpread_AtClose','Over_AtOpen','Over_AtClose','2H_HomeSpread','2H_Over','ht_margin','ht_total','actual_withot'],
+            'context_all_odds': ['HomeSpread_AtOpen','HomeSpread_AtClose','Over_AtOpen','Over_AtClose','2H_HomeSpread','2H_Over','ht_margin','ht_total','actual_withot'],
+            'context_no_open_total': ['HomeSpread_AtClose','Over_AtClose','2H_HomeSpread','2H_Over','ht_margin','ht_total','actual_withot'],
+          }
+          out = {'rows_regular_joined': int(len(m)), 'filters': {}}
+          for fname, req in filters.items():
+              ff = {}
               for season,(lo,hi) in periods.items():
-                  s = m[(m.Date >= lo) & (m.Date < hi)][['Date','2H_HomeSpread',ac,ec]].dropna()
-                  rmse = float(np.sqrt(np.mean((s[ac]-s[ec])**2))) if len(s) else None
-                  tgt = targets[season]
-                  err = abs(rmse-tgt) if rmse is not None else None
-                  total_abs += err or 0.0
-                  vv[season] = {'n': int(len(s)), 'rmse': rmse, 'target': tgt, 'abs_error': err}
-              vv['sum_abs_error'] = total_abs
-              out['variants'][name] = vv
+                  s = m[(m.Date >= lo) & (m.Date < hi)].dropna(subset=req)
+                  rmse = float(np.sqrt(np.mean((s.actual_withot-s.expected_from_spread)**2))) if len(s) else None
+                  t = targets[season]
+                  ff[season] = {
+                    'n': int(len(s)), 'target_n': t['n'], 'n_error': int(len(s)-t['n']),
+                    'rmse': rmse, 'target_rmse': t['rmse'],
+                    'rmse_abs_error': abs(rmse-t['rmse']) if rmse is not None else None
+                  }
+              out['filters'][fname] = ff
 
           Path('research/v09_baseline_rmse_audit.json').write_text(json.dumps(out, indent=2), encoding='utf-8')
           print(json.dumps(out, indent=2))
@@ -103,5 +109,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add research/v09_baseline_rmse_audit.json
-          git commit -m "Record exact v0.9 baseline RMSE convention audit" || exit 0
+          git commit -m "Refine exact v0.9 baseline RMSE filter audit" || exit 0
           git push origin HEAD:research/v09-h2-audit
