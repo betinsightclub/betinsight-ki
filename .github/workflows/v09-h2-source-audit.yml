@@ -1,0 +1,111 @@
+name: v0.9 H2 source audit
+
+on:
+  push:
+    branches:
+      - research/v09-h2-audit
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/v09-h2-audit
+
+      - name: Download original basketball database
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/v09db research
+          curl -L --fail --retry 3 \
+            https://raw.githubusercontent.com/PranavSitaraman/NBA-Injury-Betting/main/basketball-final.sqlite.zip \
+            -o /tmp/v09db/basketball-final.sqlite.zip
+          unzip -o /tmp/v09db/basketball-final.sqlite.zip -d /tmp/v09db
+          ls -lh /tmp/v09db
+
+      - name: Audit BettingOdds_History
+        run: |
+          python - <<'PY'
+          import json, sqlite3
+          from pathlib import Path
+          import numpy as np
+          import pandas as pd
+
+          db = Path('/tmp/v09db/basketball-final.sqlite')
+          con = sqlite3.connect(db)
+
+          tables = pd.read_sql_query("SELECT name, sql FROM sqlite_master WHERE type='table' ORDER BY name", con)
+          Path('research/v09_sqlite_schema.txt').write_text(
+              '\n\n'.join(f"TABLE {r['name']}\n{r['sql']}" for _, r in tables.iterrows()),
+              encoding='utf-8'
+          )
+
+          df = pd.read_sql_query('SELECT * FROM BettingOdds_History', con)
+          cols = list(df.columns)
+          date_col = 'Date' if 'Date' in df.columns else None
+          if date_col:
+              df['_date'] = pd.to_datetime(df[date_col], errors='coerce')
+
+          hs_open = pd.to_numeric(df.get('HomeSpread_AtOpen'), errors='coerce')
+          hs_close = pd.to_numeric(df.get('HomeSpread_AtClose'), errors='coerce')
+          h2 = pd.to_numeric(df.get('2H_HomeSpread'), errors='coerce')
+
+          valid_close = hs_close.notna() & h2.notna() & (hs_close != 0) & (h2 != 0)
+          valid_open = hs_open.notna() & h2.notna() & (hs_open != 0) & (h2 != 0)
+
+          same_close = (np.sign(hs_close[valid_close]) == np.sign(h2[valid_close]))
+          same_open = (np.sign(hs_open[valid_open]) == np.sign(h2[valid_open]))
+
+          summary = {
+              'db_bytes': db.stat().st_size,
+              'rows': int(len(df)),
+              'columns': cols,
+              'date_min': str(df['_date'].min()) if date_col else None,
+              'date_max': str(df['_date'].max()) if date_col else None,
+              'valid_nonzero_close_h2': int(valid_close.sum()),
+              'same_sign_close_h2': int(same_close.sum()),
+              'opposite_sign_close_h2': int((~same_close).sum()),
+              'same_sign_close_h2_rate': float(same_close.mean()) if len(same_close) else None,
+              'valid_nonzero_open_h2': int(valid_open.sum()),
+              'same_sign_open_h2': int(same_open.sum()),
+              'opposite_sign_open_h2': int((~same_open).sum()),
+              'same_sign_open_h2_rate': float(same_open.mean()) if len(same_open) else None,
+          }
+
+          # If there are any opposite-sign examples, retain them for manual inspection.
+          inspect_cols = [c for c in [
+              'GAME_ID','Date','HomeTeam','AwayTeam','HomeSpread_AtOpen','HomeSpread_AtClose',
+              'Over_AtOpen','Over_AtClose','HomeML','AwayML','2H_HomeSpread','2H_Over'
+          ] if c in df.columns]
+
+          if valid_close.any():
+              opposite_idx = same_close.index[~same_close]
+              df.loc[opposite_idx, inspect_cols].head(200).to_csv(
+                  'research/v09_opposite_sign_examples.csv', index=False
+              )
+
+          # Small chronological sample plus the complete development-era betting rows.
+          df[inspect_cols].head(50).to_csv('research/v09_betting_head.csv', index=False)
+          if date_col:
+              dev = df[(df['_date'] >= '2013-07-01') & (df['_date'] < '2017-07-01')]
+              dev[inspect_cols].to_csv('research/v09_dev_betting.csv', index=False)
+              summary['dev_rows_2013_2017'] = int(len(dev))
+
+          Path('research/v09_h2_source_audit.json').write_text(
+              json.dumps(summary, indent=2, ensure_ascii=False), encoding='utf-8'
+          )
+          print(json.dumps(summary, indent=2))
+          con.close()
+          PY
+
+      - name: Commit audit outputs to research branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/v09_*
+          git commit -m "Record v0.9 original SQLite H2 audit" || exit 0
+          git push origin HEAD:research/v09-h2-audit
