@@ -27,6 +27,9 @@ jobs:
           unzip -o /tmp/v09db/basketball-final.sqlite.zip -d /tmp/v09db
           ls -lh /tmp/v09db
 
+      - name: Install audit dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy
+
       - name: Audit BettingOdds_History
         run: |
           python - <<'PY'
@@ -76,7 +79,6 @@ jobs:
               'same_sign_open_h2_rate': float(same_open.mean()) if len(same_open) else None,
           }
 
-          # If there are any opposite-sign examples, retain them for manual inspection.
           inspect_cols = [c for c in [
               'GAME_ID','Date','HomeTeam','AwayTeam','HomeSpread_AtOpen','HomeSpread_AtClose',
               'Over_AtOpen','Over_AtClose','HomeML','AwayML','2H_HomeSpread','2H_Over'
@@ -88,7 +90,6 @@ jobs:
                   'research/v09_opposite_sign_examples.csv', index=False
               )
 
-          # Small chronological sample plus the complete development-era betting rows.
           df[inspect_cols].head(50).to_csv('research/v09_betting_head.csv', index=False)
           if date_col:
               dev = df[(df['_date'] >= '2013-07-01') & (df['_date'] < '2017-07-01')]
