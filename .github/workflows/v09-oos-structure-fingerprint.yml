@@ -1,0 +1,199 @@
+name: v0.9 exact OOS structure fingerprint
+
+on:
+  push:
+    branches:
+      - research/v09-h2-audit
+
+permissions:
+  contents: write
+
+jobs:
+  solve:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/v09-h2-audit
+      - name: Download original database
+        run: |
+          mkdir -p /tmp/v09db research
+          curl -L --fail --retry 3 https://raw.githubusercontent.com/PranavSitaraman/NBA-Injury-Betting/main/basketball-final.sqlite.zip -o /tmp/v09db/db.zip
+          unzip -o /tmp/v09db/db.zip -d /tmp/v09db
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scikit-learn
+      - name: Search model structure against exact OOS fingerprints
+        run: |
+          python - <<'PY'
+          import sqlite3, json, math, itertools
+          from pathlib import Path
+          import numpy as np
+          import pandas as pd
+          from sklearn.preprocessing import StandardScaler
+          from sklearn.linear_model import Ridge
+
+          con=sqlite3.connect('/tmp/v09db/basketball-final.sqlite')
+          o=pd.read_sql_query('SELECT * FROM BettingOdds_History',con)
+          r=pd.read_sql_query('SELECT DISTINCT GAME_ID FROM Game',con)
+          q=pd.read_sql_query('''SELECT GAME_ID,
+            PTS_QTR1_HOME,PTS_QTR2_HOME,PTS_QTR3_HOME,PTS_QTR4_HOME,
+            PTS_QTR1_AWAY,PTS_QTR2_AWAY,PTS_QTR3_AWAY,PTS_QTR4_AWAY,
+            PTS_HOME_y,PTS_AWAY FROM Game_FullDetails''',con).drop_duplicates('GAME_ID')
+          con.close()
+          d=o.merge(r,on='GAME_ID',how='inner').merge(q,on='GAME_ID',how='inner')
+          d['Date']=pd.to_datetime(d.Date,errors='coerce')
+          nums=['HomeSpread_AtOpen','HomeSpread_AtClose','Over_AtOpen','Over_AtClose','2H_HomeSpread','2H_Over',
+                'PTS_QTR1_HOME','PTS_QTR2_HOME','PTS_QTR3_HOME','PTS_QTR4_HOME','PTS_QTR1_AWAY','PTS_QTR2_AWAY','PTS_QTR3_AWAY','PTS_QTR4_AWAY','PTS_HOME_y','PTS_AWAY']
+          for c in nums:d[c]=pd.to_numeric(d[c],errors='coerce')
+          d['season_start']=np.where(d.Date.dt.month>=7,d.Date.dt.year,d.Date.dt.year-1)
+          d['ht_margin']=(d.PTS_QTR1_HOME+d.PTS_QTR2_HOME)-(d.PTS_QTR1_AWAY+d.PTS_QTR2_AWAY)
+          d['ht_total']=(d.PTS_QTR1_HOME+d.PTS_QTR2_HOME)+(d.PTS_QTR1_AWAY+d.PTS_QTR2_AWAY)
+          d['actual_noot']=(d.PTS_QTR3_HOME+d.PTS_QTR4_HOME)-(d.PTS_QTR3_AWAY+d.PTS_QTR4_AWAY)
+          d['actual_withot']=(d.PTS_HOME_y-d.PTS_AWAY)-d.ht_margin
+          d['h2exp']=-d['2H_HomeSpread']
+          d['preexp']=-d['HomeSpread_AtClose']
+          d['prehalf']=d.preexp/2.0
+
+          fn=['margin2h_vs_pregame_half','ht_margin','ht_margin_surprise','spread_close','total2h_vs_pregame_half','total_close','total_move','ht_total_surprise']
+          stored=np.array([-0.8094746967645475,-0.3325877729098592,-0.27095763027679604,0.24972916246690846,-0.1656421906820333,0.11024812552992498,0.06462265416697556,-0.04308359545971495])
+          oos_targets={
+            2017:{'rmse':9.858216869241469,'bets':332,'W':168,'L':157,'P':7},
+            2018:{'rmse':10.149329971984457,'bets':295,'W':155,'L':131,'P':9},
+          }
+          gate_targets={0.25:(2841,1426,1345,70),0.5:(1419,716,667,36),0.75:(664,354,293,17),1.0:(302,158,136,8),1.25:(129,68,56,5),1.5:(50,29,19,2),2.0:(12,9,3,0)}
+          fold_target=np.array([0.012949336036388814,0.02695917735504505,0.025827748983386023])
+
+          def features(x,opt):
+            # displacement of current H2 expectation from half of pregame expectation
+            if opt['margin']=='expected': md=x.h2exp-x.prehalf
+            else: md=x['2H_HomeSpread']-x['HomeSpread_AtClose']/2
+            if opt['margin_rev']: md=-md
+            hm=x.ht_margin*opt['ht_sign']
+            if opt['htsurp']=='expected': hs=hm-(x.prehalf*opt['ht_sign'])
+            else: hs=hm-(x['HomeSpread_AtClose']/2*opt['ht_sign'])
+            sp=x['HomeSpread_AtClose'] if opt['spread']=='line' else x.preexp
+            td=x['2H_Over']-x['Over_AtClose']/2
+            if opt['td_rev']: td=-td
+            tm=x['Over_AtClose']-x['Over_AtOpen']
+            if opt['tm_rev']: tm=-tm
+            ht=x.ht_total-x['Over_AtClose']/2
+            return pd.DataFrame({fn[0]:md,fn[1]:hm,fn[2]:hs,fn[3]:sp,fn[4]:td,fn[5]:x['Over_AtClose'],fn[6]:tm,fn[7]:ht},index=x.index)
+
+          def target_and_base(x,tname):
+            if tname=='resid_withot': return x.actual_withot-x.h2exp, x.h2exp, x.actual_withot
+            if tname=='resid_noot': return x.actual_noot-x.h2exp, x.h2exp, x.actual_withot
+            if tname=='direct_withot': return x.actual_withot, None, x.actual_withot
+            if tname=='direct_noot': return x.actual_noot, None, x.actual_withot
+            if tname=='prehalf_resid_withot': return x.actual_withot-x.prehalf, x.prehalf, x.actual_withot
+            if tname=='prehalf_resid_noot': return x.actual_noot-x.prehalf, x.prehalf, x.actual_withot
+            raise ValueError(tname)
+
+          def fit_predict(tr,te,opt,tname,scale_mode):
+            Xtr=features(tr,opt); Xte=features(te,opt)
+            ytr,base_tr,atr=target_and_base(tr,tname)
+            yte,base_te,ate=target_and_base(te,tname)
+            req=pd.concat([Xtr,ytr.rename('_y')],axis=1).dropna()
+            tr2=tr.loc[req.index]; Xtr=req[fn]; ytr=req._y
+            reqte=pd.concat([Xte,yte.rename('_y')],axis=1).dropna()
+            te2=te.loc[reqte.index]; Xte=reqte[fn]
+            if scale_mode=='xscale':
+              sx=StandardScaler().fit(Xtr); XX=sx.transform(Xtr); XXte=sx.transform(Xte)
+              model=Ridge(alpha=300,fit_intercept=True).fit(XX,ytr)
+              py=model.predict(XXte); coef=model.coef_.copy()
+            elif scale_mode=='xyscale':
+              sx=StandardScaler().fit(Xtr); sy=StandardScaler().fit(ytr.to_numpy().reshape(-1,1))
+              model=Ridge(alpha=300,fit_intercept=True).fit(sx.transform(Xtr),sy.transform(ytr.to_numpy().reshape(-1,1)).ravel())
+              py=sy.inverse_transform(model.predict(sx.transform(Xte)).reshape(-1,1)).ravel()
+              # convert coefficients back to points-per-standardized-X for comparison
+              coef=model.coef_.copy()*sy.scale_[0]
+            else:
+              model=Ridge(alpha=300,fit_intercept=True).fit(Xtr,ytr)
+              py=model.predict(Xte); coef=model.coef_.copy()*Xtr.std(ddof=0).to_numpy()
+            if tname.startswith('direct'):
+              pred=py; edge=pred-te2.h2exp.to_numpy()
+            elif tname.startswith('prehalf_resid'):
+              pred=te2.prehalf.to_numpy()+py; edge=pred-te2.h2exp.to_numpy()
+            else:
+              pred=te2.h2exp.to_numpy()+py; edge=py
+            return te2,pred,edge,coef
+
+          def score_wlp(te,edge,g=.75):
+            mask=np.abs(edge)>=g
+            z=te.loc[mask]
+            e=edge[mask]
+            cover=z.actual_withot.to_numpy()+z['2H_HomeSpread'].to_numpy()
+            s=np.sign(e)*cover
+            return int(mask.sum()),int((s>1e-9).sum()),int((s<-1e-9).sum()),int((np.abs(s)<=1e-9).sum())
+
+          # Logical formula grid. OOS 2017/18+2018/19 are untouched fingerprints.
+          opts=[]
+          for vals in itertools.product(['expected','line'],[False,True],[1,-1],['expected','line'],['line','expected'],[False,True],[False,True]):
+            opts.append(dict(zip(['margin','margin_rev','ht_sign','htsurp','spread','td_rev','tm_rev'],vals)))
+
+          rows=[]
+          for opt,tname,scale_mode,train_mode in itertools.product(opts,
+              ['resid_withot','resid_noot','direct_withot','direct_noot','prehalf_resid_withot','prehalf_resid_noot'],
+              ['xscale','xyscale','raw'],['fixed','expanding']):
+            # fit final dev once for coefficient fingerprint
+            dev=d[(d.season_start>=2013)&(d.season_start<=2016)].copy()
+            try:
+              _,_,_,coef=fit_predict(dev,dev,opt,tname,scale_mode)
+            except Exception: continue
+            coef_mae=float(np.mean(np.abs(coef-stored)))
+            oos_err=0.0; bet_err=0; metrics={}
+            ok=True
+            for sy in [2017,2018]:
+              if train_mode=='fixed': tr=dev
+              else: tr=d[(d.season_start>=2013)&(d.season_start<sy)].copy()
+              te=d[d.season_start==sy].copy()
+              try: te2,pred,edge,_=fit_predict(tr,te,opt,tname,scale_mode)
+              except Exception: ok=False; break
+              rmse=float(np.sqrt(np.mean((te2.actual_withot.to_numpy()-pred)**2)))
+              wlp=score_wlp(te2,edge,.75)
+              targ=oos_targets[sy]
+              oos_err+=abs(rmse-targ['rmse'])
+              bet_err+=abs(wlp[0]-targ['bets'])+abs(wlp[1]-targ['W'])+abs(wlp[2]-targ['L'])+abs(wlp[3]-targ['P'])
+              metrics[str(sy)]={'n':int(len(te2)),'rmse':rmse,'target_rmse':targ['rmse'],'wlp':list(wlp),'target_wlp':[targ['bets'],targ['W'],targ['L'],targ['P']]}
+            if not ok: continue
+            # development OOF gate + fold RMSE with 2014,15,16
+            pp=[]; imps=[]; fold_ns=[]
+            for sy in [2014,2015,2016]:
+              tr=d[(d.season_start>=2013)&(d.season_start<sy)].copy(); te=d[d.season_start==sy].copy()
+              try: te2,pred,edge,_=fit_predict(tr,te,opt,tname,scale_mode)
+              except Exception: ok=False; break
+              br=float(np.sqrt(np.mean((te2.actual_withot.to_numpy()-te2.h2exp.to_numpy())**2)))
+              mr=float(np.sqrt(np.mean((te2.actual_withot.to_numpy()-pred)**2)))
+              imps.append(br-mr); fold_ns.append(int(len(te2)))
+              z=te2[['actual_withot','2H_HomeSpread']].copy(); z['edge']=edge; pp.append(z)
+            if not ok: continue
+            p=pd.concat(pp)
+            gates={}; gate_abs=0
+            for g,tgt in gate_targets.items():
+              mask=p.edge.abs()>=g; qg=p[mask]; cover=qg.actual_withot+qg['2H_HomeSpread']; s=np.sign(qg.edge)*cover
+              vv=(int(mask.sum()),int((s>1e-9).sum()),int((s<-1e-9).sum()),int((s.abs()<=1e-9).sum()))
+              gates[str(g)]=list(vv); gate_abs+=sum(abs(vv[i]-tgt[i]) for i in range(4))
+            fs=np.array([min(imps),np.mean(imps),np.median(imps)])
+            fold_mae=float(np.mean(np.abs(fs-fold_target)))
+            # Strong preference to exact untouched OOS fingerprints; no 2026 involved.
+            rank=oos_err*20000 + bet_err*5 + coef_mae*1000 + fold_mae*5000 + gate_abs*.2
+            rows.append({'rank':rank,'oos_rmse_abs_error':oos_err,'oos_wlp_abs_error':bet_err,'coef_mae':coef_mae,'fold_mae':fold_mae,'gate_abs_error':gate_abs,
+              'target':tname,'scale':scale_mode,'train_mode':train_mode,'opt':opt,'coef':dict(zip(fn,[float(v) for v in coef])),
+              'oos':metrics,'fold_improvements':[float(v) for v in imps],'fold_ns':fold_ns,'gates':gates})
+          rows=sorted(rows,key=lambda z:z['rank'])
+          out={'n':len(rows),'top30':rows[:30]}
+          Path('research/v09_oos_structure_fingerprint.json').write_text(json.dumps(out,indent=2),encoding='utf-8')
+          flat=[]
+          for i,z in enumerate(rows[:200],1):
+            flat.append({'rank_no':i,'rank':z['rank'],'oos_rmse_err':z['oos_rmse_abs_error'],'oos_wlp_err':z['oos_wlp_abs_error'],'coef_mae':z['coef_mae'],'fold_mae':z['fold_mae'],'gate_abs':z['gate_abs_error'],'target':z['target'],'scale':z['scale'],'train_mode':z['train_mode'],**z['opt'],
+              '2017_rmse':z['oos']['2017']['rmse'],'2017_bets':z['oos']['2017']['wlp'][0],'2018_rmse':z['oos']['2018']['rmse'],'2018_bets':z['oos']['2018']['wlp'][0]})
+          pd.DataFrame(flat).to_csv('research/v09_oos_structure_fingerprint_top200.csv',index=False)
+          print(json.dumps(rows[:5],indent=2))
+          PY
+      - name: Commit outputs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/v09_oos_structure_fingerprint*
+          git commit -m "Record v0.9 exact OOS structure fingerprints" || exit 0
+          git push origin HEAD:research/v09-h2-audit
