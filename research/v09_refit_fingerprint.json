@@ -1,0 +1,1946 @@
+{
+  "n_variants": 1024,
+  "targets": {
+    "coef": {
+      "margin2h_vs_pregame_half": -0.8094746967645475,
+      "ht_margin": -0.3325877729098592,
+      "ht_margin_surprise": -0.27095763027679604,
+      "spread_close": 0.24972916246690846,
+      "total2h_vs_pregame_half": -0.1656421906820333,
+      "total_close": 0.11024812552992498,
+      "total_move": 0.06462265416697556,
+      "ht_total_surprise": -0.04308359545971495
+    },
+    "fold_summary": {
+      "worst": 0.012949336036388814,
+      "mean": 0.02695917735504505,
+      "median": 0.025827748983386023
+    },
+    "gates": {
+      "0.25": [
+        2841,
+        1426,
+        1345,
+        70
+      ],
+      "0.5": [
+        1419,
+        716,
+        667,
+        36
+      ],
+      "0.75": [
+        664,
+        354,
+        293,
+        17
+      ],
+      "1.0": [
+        302,
+        158,
+        136,
+        8
+      ],
+      "1.25": [
+        129,
+        68,
+        56,
+        5
+      ],
+      "1.5": [
+        50,
+        29,
+        19,
+        2
+      ],
+      "2.0": [
+        12,
+        9,
+        3,
+        0
+      ]
+    }
+  },
+  "top20": [
+    {
+      "dataset": "regular_table",
+      "opts": {
+        "actual_col": "actual2h_noot",
+        "margin_mode": "expected",
+        "margin_reverse": false,
+        "ht_sign": 1,
+        "ht_surprise_basis": "line",
+        "spread_mode": "line",
+        "total_disp_reverse": false,
+        "total_move_reverse": false,
+        "target_reverse": false
+      },
+      "rows_dev": 4918,
+      "fold_ns": [
+        1230,
+        1228,
+        1230
+      ],
+      "coef": {
+        "margin2h_vs_pregame_half": -1.0237977820489899,
+        "ht_margin": -0.38696663641349605,
+        "ht_margin_surprise": -0.40391565992183726,
+        "spread_close": 0.2437379795968467,
+        "total2h_vs_pregame_half": -0.33757506573661844,
+        "total_close": 0.13021003170335887,
+        "total_move": 0.12914858525134704,
+        "ht_total_surprise": -0.07556140102200239
+      },
+      "coef_mae": 0.0870687098972325,
+      "fold_improvements": [
+        -0.02024582729566582,
+        0.01788412651679927,
+        -0.1203830976806941
+      ],
+      "fold_summary": {
+        "worst": -0.1203830976806941,
+        "mean": -0.040914932819853554,
+        "median": -0.02024582729566582
+      },
+      "fold_mae": 0.08242670672367779,
+      "gates": {
+        "0.25": [
+          2472,
+          1287,
+          1132,
+          53
+        ],
+        "0.5": [
+          1512,
+          772,
+          699,
+          41
+        ],
+        "0.75": [
+          783,
+          413,
+          352,
+          18
+        ],
+        "1.0": [
+          373,
+          202,
+          160,
+          11
+        ],
+        "1.25": [
+          129,
+          73,
+          53,
+          3
+        ],
+        "1.5": [
+          43,
+          22,
+          19,
+          2
+        ],
+        "2.0": [
+          6,
+          3,
+          3,
+          0
+        ]
+      },
+      "gate_abs_error": 1340,
+      "gate075": [
+        783,
+        413,
+        352,
+        18
+      ],
+      "rank": 924.7357771340104
+    },
+    {
+      "dataset": "regular_table",
+      "opts": {
+        "actual_col": "actual2h_noot",
+        "margin_mode": "expected",
+        "margin_reverse": false,
+        "ht_sign": 1,
+        "ht_surprise_basis": "line",
+        "spread_mode": "line",
+        "total_disp_reverse": false,
+        "total_move_reverse": false,
+        "target_reverse": true
+      },
+      "rows_dev": 4918,
+      "fold_ns": [
+        1230,
+        1228,
+        1230
+      ],
+      "coef": {
+        "margin2h_vs_pregame_half": -1.0237977820489899,
+        "ht_margin": -0.38696663641349605,
+        "ht_margin_surprise": -0.40391565992183726,
+        "spread_close": 0.2437379795968467,
+        "total2h_vs_pregame_half": -0.33757506573661844,
+        "total_close": 0.13021003170335887,
+        "total_move": 0.12914858525134704,
+        "ht_total_surprise": -0.07556140102200239
+      },
+      "coef_mae": 0.0870687098972325,
+      "fold_improvements": [
+        -0.02024582729566582,
+        0.01788412651679927,
+        -0.1203830976806941
+      ],
+      "fold_summary": {
+        "worst": -0.1203830976806941,
+        "mean": -0.040914932819853554,
+        "median": -0.02024582729566582
+      },
+      "fold_mae": 0.08242670672367779,
+      "gates": {
+        "0.25": [
+          2472,
+          1287,
+          1132,
+          53
+        ],
+        "0.5": [
+          1512,
+          772,
+          699,
+          41
+        ],
+        "0.75": [
+          783,
+          413,
+          352,
+          18
+        ],
+        "1.0": [
+          373,
+          202,
+          160,
+          11
+        ],
+        "1.25": [
+          129,
+          73,
+          53,
+          3
+        ],
+        "1.5": [
+          43,
+          22,
+          19,
+          2
+        ],
+        "2.0": [
+          6,
+          3,
+          3,
+          0
+        ]
+      },
+      "gate_abs_error": 1340,
+      "gate075": [
+        783,
+        413,
+        352,
+        18
+      ],
+      "rank": 924.7357771340104
+    },
+    {
+      "dataset": "regular_table",
+      "opts": {
+        "actual_col": "actual2h_noot",
+        "margin_mode": "line",
+        "margin_reverse": true,
+        "ht_sign": 1,
+        "ht_surprise_basis": "line",
+        "spread_mode": "line",
+        "total_disp_reverse": false,
+        "total_move_reverse": false,
+        "target_reverse": false
+      },
+      "rows_dev": 4918,
+      "fold_ns": [
+        1230,
+        1228,
+        1230
+      ],
+      "coef": {
+        "margin2h_vs_pregame_half": -1.0237977820489899,
+        "ht_margin": -0.38696663641349605,
+        "ht_margin_surprise": -0.40391565992183726,
+        "spread_close": 0.2437379795968467,
+        "total2h_vs_pregame_half": -0.33757506573661844,
+        "total_close": 0.13021003170335887,
+        "total_move": 0.12914858525134704,
+        "ht_total_surprise": -0.07556140102200239
+      },
+      "coef_mae": 0.0870687098972325,
+      "fold_improvements": [
+        -0.02024582729566582,
+        0.01788412651679927,
+        -0.1203830976806941
+      ],
+      "fold_summary": {
+        "worst": -0.1203830976806941,
+        "mean": -0.040914932819853554,
+        "median": -0.02024582729566582
+      },
+      "fold_mae": 0.08242670672367779,
+      "gates": {
+        "0.25": [
+          2472,
+          1287,
+          1132,
+          53
+        ],
+        "0.5": [
+          1512,
+          772,
+          699,
+          41
+        ],
+        "0.75": [
+          783,
+          413,
+          352,
+          18
+        ],
+        "1.0": [
+          373,
+          202,
+          160,
+          11
+        ],
+        "1.25": [
+          129,
+          73,
+          53,
+          3
+        ],
+        "1.5": [
+          43,
+          22,
+          19,
+          2
+        ],
+        "2.0": [
+          6,
+          3,
+          3,
+          0
+        ]
+      },
+      "gate_abs_error": 1340,
+      "gate075": [
+        783,
+        413,
+        352,
+        18
+      ],
+      "rank": 924.7357771340104
+    },
+    {
+      "dataset": "regular_table",
+      "opts": {
+        "actual_col": "actual2h_noot",
+        "margin_mode": "line",
+        "margin_reverse": true,
+        "ht_sign": 1,
+        "ht_surprise_basis": "line",
+        "spread_mode": "line",
+        "total_disp_reverse": false,
+        "total_move_reverse": false,
+        "target_reverse": true
+      },
+      "rows_dev": 4918,
+      "fold_ns": [
+        1230,
+        1228,
+        1230
+      ],
+      "coef": {
+        "margin2h_vs_pregame_half": -1.0237977820489899,
+        "ht_margin": -0.38696663641349605,
+        "ht_margin_surprise": -0.40391565992183726,
+        "spread_close": 0.2437379795968467,
+        "total2h_vs_pregame_half": -0.33757506573661844,
+        "total_close": 0.13021003170335887,
+        "total_move": 0.12914858525134704,
+        "ht_total_surprise": -0.07556140102200239
+      },
+      "coef_mae": 0.0870687098972325,
+      "fold_improvements": [
+        -0.02024582729566582,
+        0.01788412651679927,
+        -0.1203830976806941
+      ],
+      "fold_summary": {
+        "worst": -0.1203830976806941,
+        "mean": -0.040914932819853554,
+        "median": -0.02024582729566582
+      },
+      "fold_mae": 0.08242670672367779,
+      "gates": {
+        "0.25": [
+          2472,
+          1287,
+          1132,
+          53
+        ],
+        "0.5": [
+          1512,
+          772,
+          699,
+          41
+        ],
+        "0.75": [
+          783,
+          413,
+          352,
+          18
+        ],
+        "1.0": [
+          373,
+          202,
+          160,
+          11
+        ],
+        "1.25": [
+          129,
+          73,
+          53,
+          3
+        ],
+        "1.5": [
+          43,
+          22,
+          19,
+          2
+        ],
+        "2.0": [
+          6,
+          3,
+          3,
+          0
+        ]
+      },
+      "gate_abs_error": 1340,
+      "gate075": [
+        783,
+        413,
+        352,
+        18
+      ],
+      "rank": 924.7357771340104
+    },
+    {
+      "dataset": "all",
+      "opts": {
+        "actual_col": "actual2h_noot",
+        "margin_mode": "expected",
+        "margin_reverse": false,
+        "ht_sign": 1,
+        "ht_surprise_basis": "line",
+        "spread_mode": "line",
+        "total_disp_reverse": false,
+        "total_move_reverse": false,
+        "target_reverse": false
+      },
+      "rows_dev": 4918,
+      "fold_ns": [
+        1230,
+        1228,
+        1230
+      ],
+      "coef": {
+        "margin2h_vs_pregame_half": -1.0237977820489899,
+        "ht_margin": -0.38696663641349605,
+        "ht_margin_surprise": -0.40391565992183726,
+        "spread_close": 0.2437379795968467,
+        "total2h_vs_pregame_half": -0.33757506573661844,
+        "total_close": 0.13021003170335887,
+        "total_move": 0.12914858525134704,
+        "ht_total_surprise": -0.07556140102200239
+      },
+      "coef_mae": 0.0870687098972325,
+      "fold_improvements": [
+        -0.02024582729566582,
+        0.01788412651679927,
+        -0.1203830976806941
+      ],
+      "fold_summary": {
+        "worst": -0.1203830976806941,
+        "mean": -0.040914932819853554,
+        "median": -0.02024582729566582
+      },
+      "fold_mae": 0.08242670672367779,
+      "gates": {
+        "0.25": [
+          2472,
+          1287,
+          1132,
+          53
+        ],
+        "0.5": [
+          1512,
+          772,
+          699,
+          41
+        ],
+        "0.75": [
+          783,
+          413,
+          352,
+          18
+        ],
+        "1.0": [
+          373,
+          202,
+          160,
+          11
+        ],
+        "1.25": [
+          129,
+          73,
+          53,
+          3
+        ],
+        "1.5": [
+          43,
+          22,
+          19,
+          2
+        ],
+        "2.0": [
+          6,
+          3,
+          3,
+          0
+        ]
+      },
+      "gate_abs_error": 1340,
+      "gate075": [
+        783,
+        413,
+        352,
+        18
+      ],
+      "rank": 924.7357771340104
+    },
+    {
+      "dataset": "all",
+      "opts": {
+        "actual_col": "actual2h_noot",
+        "margin_mode": "expected",
+        "margin_reverse": false,
+        "ht_sign": 1,
+        "ht_surprise_basis": "line",
+        "spread_mode": "line",
+        "total_disp_reverse": false,
+        "total_move_reverse": false,
+        "target_reverse": true
+      },
+      "rows_dev": 4918,
+      "fold_ns": [
+        1230,
+        1228,
+        1230
+      ],
+      "coef": {
+        "margin2h_vs_pregame_half": -1.0237977820489899,
+        "ht_margin": -0.38696663641349605,
+        "ht_margin_surprise": -0.40391565992183726,
+        "spread_close": 0.2437379795968467,
+        "total2h_vs_pregame_half": -0.33757506573661844,
+        "total_close": 0.13021003170335887,
+        "total_move": 0.12914858525134704,
+        "ht_total_surprise": -0.07556140102200239
+      },
+      "coef_mae": 0.0870687098972325,
+      "fold_improvements": [
+        -0.02024582729566582,
+        0.01788412651679927,
+        -0.1203830976806941
+      ],
+      "fold_summary": {
+        "worst": -0.1203830976806941,
+        "mean": -0.040914932819853554,
+        "median": -0.02024582729566582
+      },
+      "fold_mae": 0.08242670672367779,
+      "gates": {
+        "0.25": [
+          2472,
+          1287,
+          1132,
+          53
+        ],
+        "0.5": [
+          1512,
+          772,
+          699,
+          41
+        ],
+        "0.75": [
+          783,
+          413,
+          352,
+          18
+        ],
+        "1.0": [
+          373,
+          202,
+          160,
+          11
+        ],
+        "1.25": [
+          129,
+          73,
+          53,
+          3
+        ],
+        "1.5": [
+          43,
+          22,
+          19,
+          2
+        ],
+        "2.0": [
+          6,
+          3,
+          3,
+          0
+        ]
+      },
+      "gate_abs_error": 1340,
+      "gate075": [
+        783,
+        413,
+        352,
+        18
+      ],
+      "rank": 924.7357771340104
+    },
+    {
+      "dataset": "all",
+      "opts": {
+        "actual_col": "actual2h_noot",
+        "margin_mode": "line",
+        "margin_reverse": true,
+        "ht_sign": 1,
+        "ht_surprise_basis": "line",
+        "spread_mode": "line",
+        "total_disp_reverse": false,
+        "total_move_reverse": false,
+        "target_reverse": false
+      },
+      "rows_dev": 4918,
+      "fold_ns": [
+        1230,
+        1228,
+        1230
+      ],
+      "coef": {
+        "margin2h_vs_pregame_half": -1.0237977820489899,
+        "ht_margin": -0.38696663641349605,
+        "ht_margin_surprise": -0.40391565992183726,
+        "spread_close": 0.2437379795968467,
+        "total2h_vs_pregame_half": -0.33757506573661844,
+        "total_close": 0.13021003170335887,
+        "total_move": 0.12914858525134704,
+        "ht_total_surprise": -0.07556140102200239
+      },
+      "coef_mae": 0.0870687098972325,
+      "fold_improvements": [
+        -0.02024582729566582,
+        0.01788412651679927,
+        -0.1203830976806941
+      ],
+      "fold_summary": {
+        "worst": -0.1203830976806941,
+        "mean": -0.040914932819853554,
+        "median": -0.02024582729566582
+      },
+      "fold_mae": 0.08242670672367779,
+      "gates": {
+        "0.25": [
+          2472,
+          1287,
+          1132,
+          53
+        ],
+        "0.5": [
+          1512,
+          772,
+          699,
+          41
+        ],
+        "0.75": [
+          783,
+          413,
+          352,
+          18
+        ],
+        "1.0": [
+          373,
+          202,
+          160,
+          11
+        ],
+        "1.25": [
+          129,
+          73,
+          53,
+          3
+        ],
+        "1.5": [
+          43,
+          22,
+          19,
+          2
+        ],
+        "2.0": [
+          6,
+          3,
+          3,
+          0
+        ]
+      },
+      "gate_abs_error": 1340,
+      "gate075": [
+        783,
+        413,
+        352,
+        18
+      ],
+      "rank": 924.7357771340104
+    },
+    {
+      "dataset": "all",
+      "opts": {
+        "actual_col": "actual2h_noot",
+        "margin_mode": "line",
+        "margin_reverse": true,
+        "ht_sign": 1,
+        "ht_surprise_basis": "line",
+        "spread_mode": "line",
+        "total_disp_reverse": false,
+        "total_move_reverse": false,
+        "target_reverse": true
+      },
+      "rows_dev": 4918,
+      "fold_ns": [
+        1230,
+        1228,
+        1230
+      ],
+      "coef": {
+        "margin2h_vs_pregame_half": -1.0237977820489899,
+        "ht_margin": -0.38696663641349605,
+        "ht_margin_surprise": -0.40391565992183726,
+        "spread_close": 0.2437379795968467,
+        "total2h_vs_pregame_half": -0.33757506573661844,
+        "total_close": 0.13021003170335887,
+        "total_move": 0.12914858525134704,
+        "ht_total_surprise": -0.07556140102200239
+      },
+      "coef_mae": 0.0870687098972325,
+      "fold_improvements": [
+        -0.02024582729566582,
+        0.01788412651679927,
+        -0.1203830976806941
+      ],
+      "fold_summary": {
+        "worst": -0.1203830976806941,
+        "mean": -0.040914932819853554,
+        "median": -0.02024582729566582
+      },
+      "fold_mae": 0.08242670672367779,
+      "gates": {
+        "0.25": [
+          2472,
+          1287,
+          1132,
+          53
+        ],
+        "0.5": [
+          1512,
+          772,
+          699,
+          41
+        ],
+        "0.75": [
+          783,
+          413,
+          352,
+          18
+        ],
+        "1.0": [
+          373,
+          202,
+          160,
+          11
+        ],
+        "1.25": [
+          129,
+          73,
+          53,
+          3
+        ],
+        "1.5": [
+          43,
+          22,
+          19,
+          2
+        ],
+        "2.0": [
+          6,
+          3,
+          3,
+          0
+        ]
+      },
+      "gate_abs_error": 1340,
+      "gate075": [
+        783,
+        413,
+        352,
+        18
+      ],
+      "rank": 924.7357771340104
+    },
+    {
+      "dataset": "regular_table",
+      "opts": {
+        "actual_col": "actual2h_noot",
+        "margin_mode": "expected",
+        "margin_reverse": false,
+        "ht_sign": 1,
+        "ht_surprise_basis": "line",
+        "spread_mode": "line",
+        "total_disp_reverse": false,
+        "total_move_reverse": true,
+        "target_reverse": false
+      },
+      "rows_dev": 4918,
+      "fold_ns": [
+        1230,
+        1228,
+        1230
+      ],
+      "coef": {
+        "margin2h_vs_pregame_half": -1.0237977820489899,
+        "ht_margin": -0.38696663641349605,
+        "ht_margin_surprise": -0.40391565992183726,
+        "spread_close": 0.2437379795968467,
+        "total2h_vs_pregame_half": -0.33757506573661844,
+        "total_close": 0.13021003170335887,
+        "total_move": -0.12914858525134704,
+        "ht_total_surprise": -0.07556140102200239
+      },
+      "coef_mae": 0.10322437343897639,
+      "fold_improvements": [
+        -0.02024582729566582,
+        0.01788412651679927,
+        -0.1203830976806941
+      ],
+      "fold_summary": {
+        "worst": -0.1203830976806941,
+        "mean": -0.040914932819853554,
+        "median": -0.02024582729566582
+      },
+      "fold_mae": 0.08242670672367779,
+      "gates": {
+        "0.25": [
+          2472,
+          1287,
+          1132,
+          53
+        ],
+        "0.5": [
+          1512,
+          772,
+          699,
+          41
+        ],
+        "0.75": [
+          783,
+          413,
+          352,
+          18
+        ],
+        "1.0": [
+          373,
+          202,
+          160,
+          11
+        ],
+        "1.25": [
+          129,
+          73,
+          53,
+          3
+        ],
+        "1.5": [
+          43,
+          22,
+          19,
+          2
+        ],
+        "2.0": [
+          6,
+          3,
+          3,
+          0
+        ]
+      },
+      "gate_abs_error": 1340,
+      "gate075": [
+        783,
+        413,
+        352,
+        18
+      ],
+      "rank": 940.8914406757542
+    },
+    {
+      "dataset": "regular_table",
+      "opts": {
+        "actual_col": "actual2h_noot",
+        "margin_mode": "expected",
+        "margin_reverse": false,
+        "ht_sign": 1,
+        "ht_surprise_basis": "line",
+        "spread_mode": "line",
+        "total_disp_reverse": false,
+        "total_move_reverse": true,
+        "target_reverse": true
+      },
+      "rows_dev": 4918,
+      "fold_ns": [
+        1230,
+        1228,
+        1230
+      ],
+      "coef": {
+        "margin2h_vs_pregame_half": -1.0237977820489899,
+        "ht_margin": -0.38696663641349605,
+        "ht_margin_surprise": -0.40391565992183726,
+        "spread_close": 0.2437379795968467,
+        "total2h_vs_pregame_half": -0.33757506573661844,
+        "total_close": 0.13021003170335887,
+        "total_move": -0.12914858525134704,
+        "ht_total_surprise": -0.07556140102200239
+      },
+      "coef_mae": 0.10322437343897639,
+      "fold_improvements": [
+        -0.02024582729566582,
+        0.01788412651679927,
+        -0.1203830976806941
+      ],
+      "fold_summary": {
+        "worst": -0.1203830976806941,
+        "mean": -0.040914932819853554,
+        "median": -0.02024582729566582
+      },
+      "fold_mae": 0.08242670672367779,
+      "gates": {
+        "0.25": [
+          2472,
+          1287,
+          1132,
+          53
+        ],
+        "0.5": [
+          1512,
+          772,
+          699,
+          41
+        ],
+        "0.75": [
+          783,
+          413,
+          352,
+          18
+        ],
+        "1.0": [
+          373,
+          202,
+          160,
+          11
+        ],
+        "1.25": [
+          129,
+          73,
+          53,
+          3
+        ],
+        "1.5": [
+          43,
+          22,
+          19,
+          2
+        ],
+        "2.0": [
+          6,
+          3,
+          3,
+          0
+        ]
+      },
+      "gate_abs_error": 1340,
+      "gate075": [
+        783,
+        413,
+        352,
+        18
+      ],
+      "rank": 940.8914406757542
+    },
+    {
+      "dataset": "regular_table",
+      "opts": {
+        "actual_col": "actual2h_noot",
+        "margin_mode": "line",
+        "margin_reverse": true,
+        "ht_sign": 1,
+        "ht_surprise_basis": "line",
+        "spread_mode": "line",
+        "total_disp_reverse": false,
+        "total_move_reverse": true,
+        "target_reverse": false
+      },
+      "rows_dev": 4918,
+      "fold_ns": [
+        1230,
+        1228,
+        1230
+      ],
+      "coef": {
+        "margin2h_vs_pregame_half": -1.0237977820489899,
+        "ht_margin": -0.38696663641349605,
+        "ht_margin_surprise": -0.40391565992183726,
+        "spread_close": 0.2437379795968467,
+        "total2h_vs_pregame_half": -0.33757506573661844,
+        "total_close": 0.13021003170335887,
+        "total_move": -0.12914858525134704,
+        "ht_total_surprise": -0.07556140102200239
+      },
+      "coef_mae": 0.10322437343897639,
+      "fold_improvements": [
+        -0.02024582729566582,
+        0.01788412651679927,
+        -0.1203830976806941
+      ],
+      "fold_summary": {
+        "worst": -0.1203830976806941,
+        "mean": -0.040914932819853554,
+        "median": -0.02024582729566582
+      },
+      "fold_mae": 0.08242670672367779,
+      "gates": {
+        "0.25": [
+          2472,
+          1287,
+          1132,
+          53
+        ],
+        "0.5": [
+          1512,
+          772,
+          699,
+          41
+        ],
+        "0.75": [
+          783,
+          413,
+          352,
+          18
+        ],
+        "1.0": [
+          373,
+          202,
+          160,
+          11
+        ],
+        "1.25": [
+          129,
+          73,
+          53,
+          3
+        ],
+        "1.5": [
+          43,
+          22,
+          19,
+          2
+        ],
+        "2.0": [
+          6,
+          3,
+          3,
+          0
+        ]
+      },
+      "gate_abs_error": 1340,
+      "gate075": [
+        783,
+        413,
+        352,
+        18
+      ],
+      "rank": 940.8914406757542
+    },
+    {
+      "dataset": "regular_table",
+      "opts": {
+        "actual_col": "actual2h_noot",
+        "margin_mode": "line",
+        "margin_reverse": true,
+        "ht_sign": 1,
+        "ht_surprise_basis": "line",
+        "spread_mode": "line",
+        "total_disp_reverse": false,
+        "total_move_reverse": true,
+        "target_reverse": true
+      },
+      "rows_dev": 4918,
+      "fold_ns": [
+        1230,
+        1228,
+        1230
+      ],
+      "coef": {
+        "margin2h_vs_pregame_half": -1.0237977820489899,
+        "ht_margin": -0.38696663641349605,
+        "ht_margin_surprise": -0.40391565992183726,
+        "spread_close": 0.2437379795968467,
+        "total2h_vs_pregame_half": -0.33757506573661844,
+        "total_close": 0.13021003170335887,
+        "total_move": -0.12914858525134704,
+        "ht_total_surprise": -0.07556140102200239
+      },
+      "coef_mae": 0.10322437343897639,
+      "fold_improvements": [
+        -0.02024582729566582,
+        0.01788412651679927,
+        -0.1203830976806941
+      ],
+      "fold_summary": {
+        "worst": -0.1203830976806941,
+        "mean": -0.040914932819853554,
+        "median": -0.02024582729566582
+      },
+      "fold_mae": 0.08242670672367779,
+      "gates": {
+        "0.25": [
+          2472,
+          1287,
+          1132,
+          53
+        ],
+        "0.5": [
+          1512,
+          772,
+          699,
+          41
+        ],
+        "0.75": [
+          783,
+          413,
+          352,
+          18
+        ],
+        "1.0": [
+          373,
+          202,
+          160,
+          11
+        ],
+        "1.25": [
+          129,
+          73,
+          53,
+          3
+        ],
+        "1.5": [
+          43,
+          22,
+          19,
+          2
+        ],
+        "2.0": [
+          6,
+          3,
+          3,
+          0
+        ]
+      },
+      "gate_abs_error": 1340,
+      "gate075": [
+        783,
+        413,
+        352,
+        18
+      ],
+      "rank": 940.8914406757542
+    },
+    {
+      "dataset": "all",
+      "opts": {
+        "actual_col": "actual2h_noot",
+        "margin_mode": "expected",
+        "margin_reverse": false,
+        "ht_sign": 1,
+        "ht_surprise_basis": "line",
+        "spread_mode": "line",
+        "total_disp_reverse": false,
+        "total_move_reverse": true,
+        "target_reverse": false
+      },
+      "rows_dev": 4918,
+      "fold_ns": [
+        1230,
+        1228,
+        1230
+      ],
+      "coef": {
+        "margin2h_vs_pregame_half": -1.0237977820489899,
+        "ht_margin": -0.38696663641349605,
+        "ht_margin_surprise": -0.40391565992183726,
+        "spread_close": 0.2437379795968467,
+        "total2h_vs_pregame_half": -0.33757506573661844,
+        "total_close": 0.13021003170335887,
+        "total_move": -0.12914858525134704,
+        "ht_total_surprise": -0.07556140102200239
+      },
+      "coef_mae": 0.10322437343897639,
+      "fold_improvements": [
+        -0.02024582729566582,
+        0.01788412651679927,
+        -0.1203830976806941
+      ],
+      "fold_summary": {
+        "worst": -0.1203830976806941,
+        "mean": -0.040914932819853554,
+        "median": -0.02024582729566582
+      },
+      "fold_mae": 0.08242670672367779,
+      "gates": {
+        "0.25": [
+          2472,
+          1287,
+          1132,
+          53
+        ],
+        "0.5": [
+          1512,
+          772,
+          699,
+          41
+        ],
+        "0.75": [
+          783,
+          413,
+          352,
+          18
+        ],
+        "1.0": [
+          373,
+          202,
+          160,
+          11
+        ],
+        "1.25": [
+          129,
+          73,
+          53,
+          3
+        ],
+        "1.5": [
+          43,
+          22,
+          19,
+          2
+        ],
+        "2.0": [
+          6,
+          3,
+          3,
+          0
+        ]
+      },
+      "gate_abs_error": 1340,
+      "gate075": [
+        783,
+        413,
+        352,
+        18
+      ],
+      "rank": 940.8914406757542
+    },
+    {
+      "dataset": "all",
+      "opts": {
+        "actual_col": "actual2h_noot",
+        "margin_mode": "expected",
+        "margin_reverse": false,
+        "ht_sign": 1,
+        "ht_surprise_basis": "line",
+        "spread_mode": "line",
+        "total_disp_reverse": false,
+        "total_move_reverse": true,
+        "target_reverse": true
+      },
+      "rows_dev": 4918,
+      "fold_ns": [
+        1230,
+        1228,
+        1230
+      ],
+      "coef": {
+        "margin2h_vs_pregame_half": -1.0237977820489899,
+        "ht_margin": -0.38696663641349605,
+        "ht_margin_surprise": -0.40391565992183726,
+        "spread_close": 0.2437379795968467,
+        "total2h_vs_pregame_half": -0.33757506573661844,
+        "total_close": 0.13021003170335887,
+        "total_move": -0.12914858525134704,
+        "ht_total_surprise": -0.07556140102200239
+      },
+      "coef_mae": 0.10322437343897639,
+      "fold_improvements": [
+        -0.02024582729566582,
+        0.01788412651679927,
+        -0.1203830976806941
+      ],
+      "fold_summary": {
+        "worst": -0.1203830976806941,
+        "mean": -0.040914932819853554,
+        "median": -0.02024582729566582
+      },
+      "fold_mae": 0.08242670672367779,
+      "gates": {
+        "0.25": [
+          2472,
+          1287,
+          1132,
+          53
+        ],
+        "0.5": [
+          1512,
+          772,
+          699,
+          41
+        ],
+        "0.75": [
+          783,
+          413,
+          352,
+          18
+        ],
+        "1.0": [
+          373,
+          202,
+          160,
+          11
+        ],
+        "1.25": [
+          129,
+          73,
+          53,
+          3
+        ],
+        "1.5": [
+          43,
+          22,
+          19,
+          2
+        ],
+        "2.0": [
+          6,
+          3,
+          3,
+          0
+        ]
+      },
+      "gate_abs_error": 1340,
+      "gate075": [
+        783,
+        413,
+        352,
+        18
+      ],
+      "rank": 940.8914406757542
+    },
+    {
+      "dataset": "all",
+      "opts": {
+        "actual_col": "actual2h_noot",
+        "margin_mode": "line",
+        "margin_reverse": true,
+        "ht_sign": 1,
+        "ht_surprise_basis": "line",
+        "spread_mode": "line",
+        "total_disp_reverse": false,
+        "total_move_reverse": true,
+        "target_reverse": false
+      },
+      "rows_dev": 4918,
+      "fold_ns": [
+        1230,
+        1228,
+        1230
+      ],
+      "coef": {
+        "margin2h_vs_pregame_half": -1.0237977820489899,
+        "ht_margin": -0.38696663641349605,
+        "ht_margin_surprise": -0.40391565992183726,
+        "spread_close": 0.2437379795968467,
+        "total2h_vs_pregame_half": -0.33757506573661844,
+        "total_close": 0.13021003170335887,
+        "total_move": -0.12914858525134704,
+        "ht_total_surprise": -0.07556140102200239
+      },
+      "coef_mae": 0.10322437343897639,
+      "fold_improvements": [
+        -0.02024582729566582,
+        0.01788412651679927,
+        -0.1203830976806941
+      ],
+      "fold_summary": {
+        "worst": -0.1203830976806941,
+        "mean": -0.040914932819853554,
+        "median": -0.02024582729566582
+      },
+      "fold_mae": 0.08242670672367779,
+      "gates": {
+        "0.25": [
+          2472,
+          1287,
+          1132,
+          53
+        ],
+        "0.5": [
+          1512,
+          772,
+          699,
+          41
+        ],
+        "0.75": [
+          783,
+          413,
+          352,
+          18
+        ],
+        "1.0": [
+          373,
+          202,
+          160,
+          11
+        ],
+        "1.25": [
+          129,
+          73,
+          53,
+          3
+        ],
+        "1.5": [
+          43,
+          22,
+          19,
+          2
+        ],
+        "2.0": [
+          6,
+          3,
+          3,
+          0
+        ]
+      },
+      "gate_abs_error": 1340,
+      "gate075": [
+        783,
+        413,
+        352,
+        18
+      ],
+      "rank": 940.8914406757542
+    },
+    {
+      "dataset": "all",
+      "opts": {
+        "actual_col": "actual2h_noot",
+        "margin_mode": "line",
+        "margin_reverse": true,
+        "ht_sign": 1,
+        "ht_surprise_basis": "line",
+        "spread_mode": "line",
+        "total_disp_reverse": false,
+        "total_move_reverse": true,
+        "target_reverse": true
+      },
+      "rows_dev": 4918,
+      "fold_ns": [
+        1230,
+        1228,
+        1230
+      ],
+      "coef": {
+        "margin2h_vs_pregame_half": -1.0237977820489899,
+        "ht_margin": -0.38696663641349605,
+        "ht_margin_surprise": -0.40391565992183726,
+        "spread_close": 0.2437379795968467,
+        "total2h_vs_pregame_half": -0.33757506573661844,
+        "total_close": 0.13021003170335887,
+        "total_move": -0.12914858525134704,
+        "ht_total_surprise": -0.07556140102200239
+      },
+      "coef_mae": 0.10322437343897639,
+      "fold_improvements": [
+        -0.02024582729566582,
+        0.01788412651679927,
+        -0.1203830976806941
+      ],
+      "fold_summary": {
+        "worst": -0.1203830976806941,
+        "mean": -0.040914932819853554,
+        "median": -0.02024582729566582
+      },
+      "fold_mae": 0.08242670672367779,
+      "gates": {
+        "0.25": [
+          2472,
+          1287,
+          1132,
+          53
+        ],
+        "0.5": [
+          1512,
+          772,
+          699,
+          41
+        ],
+        "0.75": [
+          783,
+          413,
+          352,
+          18
+        ],
+        "1.0": [
+          373,
+          202,
+          160,
+          11
+        ],
+        "1.25": [
+          129,
+          73,
+          53,
+          3
+        ],
+        "1.5": [
+          43,
+          22,
+          19,
+          2
+        ],
+        "2.0": [
+          6,
+          3,
+          3,
+          0
+        ]
+      },
+      "gate_abs_error": 1340,
+      "gate075": [
+        783,
+        413,
+        352,
+        18
+      ],
+      "rank": 940.8914406757542
+    },
+    {
+      "dataset": "regular_table",
+      "opts": {
+        "actual_col": "actual2h_noot",
+        "margin_mode": "expected",
+        "margin_reverse": false,
+        "ht_sign": 1,
+        "ht_surprise_basis": "expected",
+        "spread_mode": "line",
+        "total_disp_reverse": false,
+        "total_move_reverse": false,
+        "target_reverse": false
+      },
+      "rows_dev": 4918,
+      "fold_ns": [
+        1230,
+        1228,
+        1230
+      ],
+      "coef": {
+        "margin2h_vs_pregame_half": -1.0309908487902826,
+        "ht_margin": -0.4251130521370242,
+        "ht_margin_surprise": -0.30251596318403756,
+        "spread_close": 0.44351732182651316,
+        "total2h_vs_pregame_half": -0.33726226102043894,
+        "total_close": 0.1298409586647045,
+        "total_move": 0.12912586696968092,
+        "ht_total_surprise": -0.07566860031806283
+      },
+      "coef_mae": 0.10346113058174808,
+      "fold_improvements": [
+        -0.02114183954300941,
+        0.01762639518000597,
+        -0.1214766796297404
+      ],
+      "fold_summary": {
+        "worst": -0.1214766796297404,
+        "mean": -0.041664041330914614,
+        "median": -0.02114183954300941
+      },
+      "fold_mae": 0.08333960762616144,
+      "gates": {
+        "0.25": [
+          2437,
+          1267,
+          1119,
+          51
+        ],
+        "0.5": [
+          1470,
+          750,
+          679,
+          41
+        ],
+        "0.75": [
+          751,
+          395,
+          338,
+          18
+        ],
+        "1.0": [
+          334,
+          179,
+          144,
+          11
+        ],
+        "1.25": [
+          111,
+          62,
+          47,
+          2
+        ],
+        "1.5": [
+          43,
+          22,
+          19,
+          2
+        ],
+        "2.0": [
+          6,
+          3,
+          3,
+          0
+        ]
+      },
+      "gate_abs_error": 1210,
+      "gate075": [
+        751,
+        395,
+        338,
+        18
+      ],
+      "rank": 948.9572068433624
+    },
+    {
+      "dataset": "regular_table",
+      "opts": {
+        "actual_col": "actual2h_noot",
+        "margin_mode": "expected",
+        "margin_reverse": false,
+        "ht_sign": 1,
+        "ht_surprise_basis": "expected",
+        "spread_mode": "line",
+        "total_disp_reverse": false,
+        "total_move_reverse": false,
+        "target_reverse": true
+      },
+      "rows_dev": 4918,
+      "fold_ns": [
+        1230,
+        1228,
+        1230
+      ],
+      "coef": {
+        "margin2h_vs_pregame_half": -1.0309908487902826,
+        "ht_margin": -0.4251130521370242,
+        "ht_margin_surprise": -0.30251596318403756,
+        "spread_close": 0.44351732182651316,
+        "total2h_vs_pregame_half": -0.33726226102043894,
+        "total_close": 0.1298409586647045,
+        "total_move": 0.12912586696968092,
+        "ht_total_surprise": -0.07566860031806283
+      },
+      "coef_mae": 0.10346113058174808,
+      "fold_improvements": [
+        -0.02114183954300941,
+        0.01762639518000597,
+        -0.1214766796297404
+      ],
+      "fold_summary": {
+        "worst": -0.1214766796297404,
+        "mean": -0.041664041330914614,
+        "median": -0.02114183954300941
+      },
+      "fold_mae": 0.08333960762616144,
+      "gates": {
+        "0.25": [
+          2437,
+          1267,
+          1119,
+          51
+        ],
+        "0.5": [
+          1470,
+          750,
+          679,
+          41
+        ],
+        "0.75": [
+          751,
+          395,
+          338,
+          18
+        ],
+        "1.0": [
+          334,
+          179,
+          144,
+          11
+        ],
+        "1.25": [
+          111,
+          62,
+          47,
+          2
+        ],
+        "1.5": [
+          43,
+          22,
+          19,
+          2
+        ],
+        "2.0": [
+          6,
+          3,
+          3,
+          0
+        ]
+      },
+      "gate_abs_error": 1210,
+      "gate075": [
+        751,
+        395,
+        338,
+        18
+      ],
+      "rank": 948.9572068433624
+    },
+    {
+      "dataset": "regular_table",
+      "opts": {
+        "actual_col": "actual2h_noot",
+        "margin_mode": "line",
+        "margin_reverse": true,
+        "ht_sign": 1,
+        "ht_surprise_basis": "expected",
+        "spread_mode": "line",
+        "total_disp_reverse": false,
+        "total_move_reverse": false,
+        "target_reverse": false
+      },
+      "rows_dev": 4918,
+      "fold_ns": [
+        1230,
+        1228,
+        1230
+      ],
+      "coef": {
+        "margin2h_vs_pregame_half": -1.0309908487902826,
+        "ht_margin": -0.4251130521370242,
+        "ht_margin_surprise": -0.30251596318403756,
+        "spread_close": 0.44351732182651316,
+        "total2h_vs_pregame_half": -0.33726226102043894,
+        "total_close": 0.1298409586647045,
+        "total_move": 0.12912586696968092,
+        "ht_total_surprise": -0.07566860031806283
+      },
+      "coef_mae": 0.10346113058174808,
+      "fold_improvements": [
+        -0.02114183954300941,
+        0.01762639518000597,
+        -0.1214766796297404
+      ],
+      "fold_summary": {
+        "worst": -0.1214766796297404,
+        "mean": -0.041664041330914614,
+        "median": -0.02114183954300941
+      },
+      "fold_mae": 0.08333960762616144,
+      "gates": {
+        "0.25": [
+          2437,
+          1267,
+          1119,
+          51
+        ],
+        "0.5": [
+          1470,
+          750,
+          679,
+          41
+        ],
+        "0.75": [
+          751,
+          395,
+          338,
+          18
+        ],
+        "1.0": [
+          334,
+          179,
+          144,
+          11
+        ],
+        "1.25": [
+          111,
+          62,
+          47,
+          2
+        ],
+        "1.5": [
+          43,
+          22,
+          19,
+          2
+        ],
+        "2.0": [
+          6,
+          3,
+          3,
+          0
+        ]
+      },
+      "gate_abs_error": 1210,
+      "gate075": [
+        751,
+        395,
+        338,
+        18
+      ],
+      "rank": 948.9572068433624
+    },
+    {
+      "dataset": "regular_table",
+      "opts": {
+        "actual_col": "actual2h_noot",
+        "margin_mode": "line",
+        "margin_reverse": true,
+        "ht_sign": 1,
+        "ht_surprise_basis": "expected",
+        "spread_mode": "line",
+        "total_disp_reverse": false,
+        "total_move_reverse": false,
+        "target_reverse": true
+      },
+      "rows_dev": 4918,
+      "fold_ns": [
+        1230,
+        1228,
+        1230
+      ],
+      "coef": {
+        "margin2h_vs_pregame_half": -1.0309908487902826,
+        "ht_margin": -0.4251130521370242,
+        "ht_margin_surprise": -0.30251596318403756,
+        "spread_close": 0.44351732182651316,
+        "total2h_vs_pregame_half": -0.33726226102043894,
+        "total_close": 0.1298409586647045,
+        "total_move": 0.12912586696968092,
+        "ht_total_surprise": -0.07566860031806283
+      },
+      "coef_mae": 0.10346113058174808,
+      "fold_improvements": [
+        -0.02114183954300941,
+        0.01762639518000597,
+        -0.1214766796297404
+      ],
+      "fold_summary": {
+        "worst": -0.1214766796297404,
+        "mean": -0.041664041330914614,
+        "median": -0.02114183954300941
+      },
+      "fold_mae": 0.08333960762616144,
+      "gates": {
+        "0.25": [
+          2437,
+          1267,
+          1119,
+          51
+        ],
+        "0.5": [
+          1470,
+          750,
+          679,
+          41
+        ],
+        "0.75": [
+          751,
+          395,
+          338,
+          18
+        ],
+        "1.0": [
+          334,
+          179,
+          144,
+          11
+        ],
+        "1.25": [
+          111,
+          62,
+          47,
+          2
+        ],
+        "1.5": [
+          43,
+          22,
+          19,
+          2
+        ],
+        "2.0": [
+          6,
+          3,
+          3,
+          0
+        ]
+      },
+      "gate_abs_error": 1210,
+      "gate075": [
+        751,
+        395,
+        338,
+        18
+      ],
+      "rank": 948.9572068433624
+    }
+  ]
+}
