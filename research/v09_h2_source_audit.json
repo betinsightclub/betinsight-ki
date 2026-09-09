@@ -1,0 +1,29 @@
+{
+  "db_bytes": 83505152,
+  "rows": 18292,
+  "columns": [
+    "GAME_ID",
+    "Date",
+    "HomeTeam",
+    "AwayTeam",
+    "HomeSpread_AtOpen",
+    "HomeSpread_AtClose",
+    "Over_AtOpen",
+    "Over_AtClose",
+    "HomeML",
+    "AwayML",
+    "2H_HomeSpread",
+    "2H_Over"
+  ],
+  "date_min": "2007-10-30 00:00:00",
+  "date_max": "2021-12-20 00:00:00",
+  "valid_nonzero_close_h2": 17333,
+  "same_sign_close_h2": 13581,
+  "opposite_sign_close_h2": 3752,
+  "same_sign_close_h2_rate": 0.7835342987365141,
+  "valid_nonzero_open_h2": 17156,
+  "same_sign_open_h2": 13256,
+  "opposite_sign_open_h2": 3900,
+  "same_sign_open_h2_rate": 0.7726742830496619,
+  "dev_rows_2013_2017": 5255
+}
