@@ -1,0 +1,226 @@
+name: v0.9 Ridge reconstruction fingerprint
+
+on:
+  push:
+    branches:
+      - research/v09-h2-audit
+
+permissions:
+  contents: write
+
+jobs:
+  fingerprint:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/v09-h2-audit
+
+      - name: Download original basketball database
+        run: |
+          mkdir -p /tmp/v09db research
+          curl -L --fail --retry 3 \
+            https://raw.githubusercontent.com/PranavSitaraman/NBA-Injury-Betting/main/basketball-final.sqlite.zip \
+            -o /tmp/v09db/basketball-final.sqlite.zip
+          unzip -o /tmp/v09db/basketball-final.sqlite.zip -d /tmp/v09db
+
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy scikit-learn
+
+      - name: Test reconstruction variants
+        run: |
+          python - <<'PY'
+          import json, itertools, sqlite3, math
+          from pathlib import Path
+          import numpy as np
+          import pandas as pd
+          from sklearn.preprocessing import StandardScaler
+          from sklearn.linear_model import Ridge
+          from sklearn.metrics import mean_squared_error
+
+          DB='/tmp/v09db/basketball-final.sqlite'
+          con=sqlite3.connect(DB)
+          odds=pd.read_sql_query('SELECT * FROM BettingOdds_History',con)
+          q=pd.read_sql_query('''
+            SELECT GAME_ID,
+              PTS_QTR1_HOME,PTS_QTR2_HOME,PTS_QTR3_HOME,PTS_QTR4_HOME,
+              PTS_QTR1_AWAY,PTS_QTR2_AWAY,PTS_QTR3_AWAY,PTS_QTR4_AWAY,
+              PTS_HOME_y,PTS_AWAY
+            FROM Game_FullDetails
+          ''',con).drop_duplicates('GAME_ID')
+          reg=pd.read_sql_query('SELECT DISTINCT GAME_ID FROM Game',con)
+          reg['in_regular_game_table']=True
+          po=pd.read_sql_query('SELECT DISTINCT GAME_ID FROM Game_Playoffs',con)
+          po['in_playoffs_table']=True
+          con.close()
+
+          d=odds.merge(q,on='GAME_ID',how='left').merge(reg,on='GAME_ID',how='left').merge(po,on='GAME_ID',how='left')
+          d['Date']=pd.to_datetime(d['Date'],errors='coerce')
+          numeric=['HomeSpread_AtOpen','HomeSpread_AtClose','Over_AtOpen','Over_AtClose','2H_HomeSpread','2H_Over',
+                   'PTS_QTR1_HOME','PTS_QTR2_HOME','PTS_QTR3_HOME','PTS_QTR4_HOME',
+                   'PTS_QTR1_AWAY','PTS_QTR2_AWAY','PTS_QTR3_AWAY','PTS_QTR4_AWAY','PTS_HOME_y','PTS_AWAY']
+          for c in numeric: d[c]=pd.to_numeric(d[c],errors='coerce')
+          d['ht_home']=d['PTS_QTR1_HOME']+d['PTS_QTR2_HOME']
+          d['ht_away']=d['PTS_QTR1_AWAY']+d['PTS_QTR2_AWAY']
+          d['ht_margin_home']=d['ht_home']-d['ht_away']
+          d['ht_total']=d['ht_home']+d['ht_away']
+          d['actual2h_noot']=(d['PTS_QTR3_HOME']+d['PTS_QTR4_HOME'])-(d['PTS_QTR3_AWAY']+d['PTS_QTR4_AWAY'])
+          d['actual2h_withot']=(d['PTS_HOME_y']-d['PTS_AWAY'])-d['ht_margin_home']
+          d['season_start']=np.where(d['Date'].dt.month>=7,d['Date'].dt.year,d['Date'].dt.year-1)
+          d['in_regular_game_table']=d['in_regular_game_table'].fillna(False)
+          d['in_playoffs_table']=d['in_playoffs_table'].fillna(False)
+
+          stored_coef=np.array([-0.8094746967645475,-0.3325877729098592,-0.27095763027679604,0.24972916246690846,-0.1656421906820333,0.11024812552992498,0.06462265416697556,-0.04308359545971495])
+          feature_names=['margin2h_vs_pregame_half','ht_margin','ht_margin_surprise','spread_close','total2h_vs_pregame_half','total_close','total_move','ht_total_surprise']
+          target_fold=np.array([0.012949336036388814,0.02695917735504505,0.025827748983386023]) # worst, mean, median
+          target_gates={0.25:(2841,1426,1345,70),0.5:(1419,716,667,36),0.75:(664,354,293,17),1.0:(302,158,136,8),1.25:(129,68,56,5),1.5:(50,29,19,2),2.0:(12,9,3,0)}
+
+          def dataset(name):
+            if name=='regular_table': return d[d.in_regular_game_table].copy()
+            if name=='not_playoffs': return d[~d.in_playoffs_table].copy()
+            return d.copy()
+
+          def build_features(x, opts):
+            # market expected margins use home perspective; spread-line variants deliberately tested too.
+            pre_exp=-x['HomeSpread_AtClose']
+            h2_exp=-x['2H_HomeSpread']
+            ht=x['ht_margin_home'] * opts['ht_sign']
+            if opts['margin_mode']=='expected':
+              margin_disp=(h2_exp-pre_exp/2.0)
+            else:
+              margin_disp=(x['2H_HomeSpread']-x['HomeSpread_AtClose']/2.0)
+            if opts['margin_reverse']: margin_disp=-margin_disp
+            if opts['ht_surprise_basis']=='expected':
+              hts=ht-(pre_exp/2.0)*opts['ht_sign']
+            else:
+              hts=ht-(x['HomeSpread_AtClose']/2.0)*opts['ht_sign']
+            spread=x['HomeSpread_AtClose'] if opts['spread_mode']=='line' else pre_exp
+            tdisp=x['2H_Over']-x['Over_AtClose']/2.0
+            if opts['total_disp_reverse']: tdisp=-tdisp
+            tmove=x['Over_AtClose']-x['Over_AtOpen']
+            if opts['total_move_reverse']: tmove=-tmove
+            htts=x['ht_total']-x['Over_AtClose']/2.0
+            X=pd.DataFrame({
+              'margin2h_vs_pregame_half':margin_disp,
+              'ht_margin':ht,
+              'ht_margin_surprise':hts,
+              'spread_close':spread,
+              'total2h_vs_pregame_half':tdisp,
+              'total_close':x['Over_AtClose'],
+              'total_move':tmove,
+              'ht_total_surprise':htts,
+            },index=x.index)
+            actual=x[opts['actual_col']]
+            residual=actual-h2_exp
+            if opts['target_reverse']: residual=-residual
+            return X,residual,actual,h2_exp
+
+          def eval_variant(dsname,opts):
+            x=dataset(dsname)
+            X,y,actual,h2exp=build_features(x,opts)
+            base=pd.concat([X,y.rename('y'),actual.rename('actual'),h2exp.rename('h2exp'),x[['season_start','2H_HomeSpread']]],axis=1).dropna()
+            base=base[(base.season_start>=2013)&(base.season_start<=2021)].copy()
+            # Require ordinary half-point/integer market values only; no additional hand filtering.
+            if len(base)<1000: return None
+
+            # expanding season walk-forward: train 2013 -> test 2014, then through 2014 -> 2015, then through 2015 -> 2016
+            preds=[]; improvements=[]; fold_ns=[]
+            for test_season in [2014,2015,2016]:
+              tr=base[(base.season_start>=2013)&(base.season_start<test_season)]
+              te=base[base.season_start==test_season]
+              if len(tr)<100 or len(te)<100: return None
+              sc=StandardScaler().fit(tr[feature_names])
+              model=Ridge(alpha=300).fit(sc.transform(tr[feature_names]),tr.y)
+              p=model.predict(sc.transform(te[feature_names]))
+              # if target reversed, convert correction back to actual-minus-market orientation for wagering/model RMSE
+              corr=-p if opts['target_reverse'] else p
+              market_pred=te.h2exp.to_numpy()
+              model_pred=market_pred+corr
+              rmse_market=math.sqrt(mean_squared_error(te.actual,market_pred))
+              rmse_model=math.sqrt(mean_squared_error(te.actual,model_pred))
+              improvements.append(rmse_market-rmse_model)
+              fold_ns.append(len(te))
+              z=te[['actual','h2exp','2H_HomeSpread','season_start']].copy()
+              z['corr']=corr
+              preds.append(z)
+            oof=pd.concat(preds)
+
+            # final dev fit on all four dev seasons for stored standardized coefficients
+            dev=base[(base.season_start>=2013)&(base.season_start<=2016)]
+            scf=StandardScaler().fit(dev[feature_names])
+            mf=Ridge(alpha=300).fit(scf.transform(dev[feature_names]),dev.y)
+            coef=mf.coef_.copy()
+            if opts['target_reverse']: coef=-coef
+
+            # OOF gate table (same directional correction convention)
+            gate={}
+            cover_margin=oof['actual'] + oof['2H_HomeSpread']
+            for g,targ in target_gates.items():
+              mask=oof['corr'].abs()>=g
+              qg=oof[mask]
+              cm=cover_margin[mask]
+              direction=np.sign(qg['corr']) # + => home, - => away
+              score=direction*cm
+              W=int((score>1e-9).sum()); L=int((score<-1e-9).sum()); P=int((score.abs()<=1e-9).sum())
+              gate[g]=(int(mask.sum()),W,L,P)
+
+            imp=np.array(improvements)
+            fold_summary=np.array([imp.min(),imp.mean(),np.median(imp)])
+            coef_mae=float(np.mean(np.abs(coef-stored_coef)))
+            fold_mae=float(np.mean(np.abs(fold_summary-target_fold)))
+            gate_abs=sum(abs(gate[g][i]-target_gates[g][i]) for g in target_gates for i in range(4))
+            gate_075=gate[0.75]
+            # Combined ranking favours exact structural fingerprints, not 2026 outcomes.
+            rank=coef_mae*1000 + fold_mae*10000 + gate_abs/100.0
+            return {
+              'dataset':dsname,'opts':opts,'rows_dev':int(len(dev)),'fold_ns':fold_ns,
+              'coef':dict(zip(feature_names,[float(v) for v in coef])),
+              'coef_mae':coef_mae,
+              'fold_improvements':[float(v) for v in improvements],
+              'fold_summary':{'worst':float(fold_summary[0]),'mean':float(fold_summary[1]),'median':float(fold_summary[2])},
+              'fold_mae':fold_mae,'gates':{str(k):list(v) for k,v in gate.items()},
+              'gate_abs_error':int(gate_abs),'gate075':list(gate_075),'rank':float(rank)
+            }
+
+          variants=[]
+          # Logical grid. total dispersion/move sign and spread feature sign can be identified by coefficient fingerprint.
+          for dsname,actual_col,margin_mode,margin_reverse,ht_sign,ht_basis,spread_mode,tdrev,tmrev,target_reverse in itertools.product(
+              ['regular_table','not_playoffs','all'],
+              ['actual2h_withot','actual2h_noot'],
+              ['expected','line'],[False,True],[1,-1],['expected','line'],['line','expected'],[False,True],[False,True],[False,True]):
+            opts={'actual_col':actual_col,'margin_mode':margin_mode,'margin_reverse':margin_reverse,'ht_sign':ht_sign,
+                  'ht_surprise_basis':ht_basis,'spread_mode':spread_mode,'total_disp_reverse':tdrev,
+                  'total_move_reverse':tmrev,'target_reverse':target_reverse}
+            try:
+              r=eval_variant(dsname,opts)
+              if r: variants.append(r)
+            except Exception as e:
+              pass
+
+          variants=sorted(variants,key=lambda r:r['rank'])
+          out={'n_variants':len(variants),'targets':{
+                'coef':dict(zip(feature_names,stored_coef.tolist())),
+                'fold_summary':{'worst':target_fold[0],'mean':target_fold[1],'median':target_fold[2]},
+                'gates':{str(k):list(v) for k,v in target_gates.items()}},
+               'top20':variants[:20]}
+          Path('research/v09_refit_fingerprint.json').write_text(json.dumps(out,indent=2),encoding='utf-8')
+          # Compact CSV ranking
+          rows=[]
+          for i,r in enumerate(variants[:100],1):
+            row={'rank_no':i,'rank_score':r['rank'],'dataset':r['dataset'],'rows_dev':r['rows_dev'],
+                 'coef_mae':r['coef_mae'],'fold_mae':r['fold_mae'],'gate_abs_error':r['gate_abs_error'],
+                 'gate075_bets':r['gate075'][0],'gate075_W':r['gate075'][1],'gate075_L':r['gate075'][2],'gate075_P':r['gate075'][3],
+                 **r['opts']}
+            rows.append(row)
+          pd.DataFrame(rows).to_csv('research/v09_refit_fingerprint_top100.csv',index=False)
+          print(json.dumps(out['top20'][:3],indent=2))
+          PY
+
+      - name: Commit fingerprint outputs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/v09_refit_fingerprint*
+          git commit -m "Record v0.9 Ridge reconstruction fingerprints" || exit 0
+          git push origin HEAD:research/v09-h2-audit
