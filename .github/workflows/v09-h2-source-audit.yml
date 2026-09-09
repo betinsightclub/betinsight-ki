@@ -30,7 +30,7 @@ jobs:
       - name: Install audit dependencies
         run: python -m pip install --disable-pip-version-check pandas numpy
 
-      - name: Audit BettingOdds_History
+      - name: Audit BettingOdds_History and halftime consistency
         run: |
           python - <<'PY'
           import json, sqlite3
@@ -48,57 +48,97 @@ jobs:
           )
 
           df = pd.read_sql_query('SELECT * FROM BettingOdds_History', con)
-          cols = list(df.columns)
-          date_col = 'Date' if 'Date' in df.columns else None
-          if date_col:
-              df['_date'] = pd.to_datetime(df[date_col], errors='coerce')
+          df['_date'] = pd.to_datetime(df['Date'], errors='coerce')
+          for c in ['HomeSpread_AtOpen','HomeSpread_AtClose','Over_AtOpen','Over_AtClose','2H_HomeSpread','2H_Over']:
+              df[c] = pd.to_numeric(df[c], errors='coerce')
 
-          hs_open = pd.to_numeric(df.get('HomeSpread_AtOpen'), errors='coerce')
-          hs_close = pd.to_numeric(df.get('HomeSpread_AtClose'), errors='coerce')
-          h2 = pd.to_numeric(df.get('2H_HomeSpread'), errors='coerce')
-
+          hs_open = df['HomeSpread_AtOpen']
+          hs_close = df['HomeSpread_AtClose']
+          h2 = df['2H_HomeSpread']
           valid_close = hs_close.notna() & h2.notna() & (hs_close != 0) & (h2 != 0)
           valid_open = hs_open.notna() & h2.notna() & (hs_open != 0) & (h2 != 0)
+          same_close = np.sign(hs_close[valid_close]) == np.sign(h2[valid_close])
+          same_open = np.sign(hs_open[valid_open]) == np.sign(h2[valid_open])
 
-          same_close = (np.sign(hs_close[valid_close]) == np.sign(h2[valid_close]))
-          same_open = (np.sign(hs_open[valid_open]) == np.sign(h2[valid_open]))
+          q = pd.read_sql_query('''
+              SELECT GAME_ID,
+                     PTS_QTR1_HOME, PTS_QTR2_HOME, PTS_QTR3_HOME, PTS_QTR4_HOME,
+                     PTS_QTR1_AWAY, PTS_QTR2_AWAY, PTS_QTR3_AWAY, PTS_QTR4_AWAY,
+                     PTS_HOME_y, PTS_AWAY_y
+              FROM Game_FullDetails
+          ''', con)
+          for c in q.columns:
+              if c != 'GAME_ID': q[c] = pd.to_numeric(q[c], errors='coerce')
+          q['ht_home'] = q['PTS_QTR1_HOME'] + q['PTS_QTR2_HOME']
+          q['ht_away'] = q['PTS_QTR1_AWAY'] + q['PTS_QTR2_AWAY']
+          q['ht_margin'] = q['ht_home'] - q['ht_away']
+          q['ht_total'] = q['ht_home'] + q['ht_away']
+          q['second_half_margin_no_ot'] = (q['PTS_QTR3_HOME'] + q['PTS_QTR4_HOME']) - (q['PTS_QTR3_AWAY'] + q['PTS_QTR4_AWAY'])
+          q['second_half_margin_with_ot'] = (q['PTS_HOME_y'] - q['PTS_AWAY_y']) - q['ht_margin']
+          q = q.drop_duplicates('GAME_ID')
+          m = df.merge(q, on='GAME_ID', how='left')
+
+          mv = m['HomeSpread_AtClose'].notna() & m['2H_HomeSpread'].notna() & (m['HomeSpread_AtClose'] != 0) & (m['2H_HomeSpread'] != 0)
+          m['sign_flip_close_to_h2'] = False
+          m.loc[mv, 'sign_flip_close_to_h2'] = np.sign(m.loc[mv,'HomeSpread_AtClose']) != np.sign(m.loc[mv,'2H_HomeSpread'])
+          m['pregame_home_expected_margin'] = -m['HomeSpread_AtClose']
+          m['h2_home_expected_margin'] = -m['2H_HomeSpread']
+          m['ht_margin_surprise_vs_fullgame_half'] = m['ht_margin'] - (m['pregame_home_expected_margin']/2.0)
+
+          flip = m[m['sign_flip_close_to_h2'] & m['ht_margin'].notna()].copy()
+          noflip = m[(~m['sign_flip_close_to_h2']) & mv & m['ht_margin'].notna()].copy()
+
+          def stats(s):
+              return {
+                  'n': int(len(s)),
+                  'ht_margin_mean': float(s['ht_margin'].mean()) if len(s) else None,
+                  'ht_margin_abs_mean': float(s['ht_margin'].abs().mean()) if len(s) else None,
+                  'ht_surprise_mean': float(s['ht_margin_surprise_vs_fullgame_half'].mean()) if len(s) else None,
+                  'ht_surprise_abs_mean': float(s['ht_margin_surprise_vs_fullgame_half'].abs().mean()) if len(s) else None,
+              }
 
           summary = {
               'db_bytes': db.stat().st_size,
               'rows': int(len(df)),
-              'columns': cols,
-              'date_min': str(df['_date'].min()) if date_col else None,
-              'date_max': str(df['_date'].max()) if date_col else None,
+              'columns': list(df.columns.drop('_date')),
+              'date_min': str(df['_date'].min()),
+              'date_max': str(df['_date'].max()),
               'valid_nonzero_close_h2': int(valid_close.sum()),
               'same_sign_close_h2': int(same_close.sum()),
               'opposite_sign_close_h2': int((~same_close).sum()),
-              'same_sign_close_h2_rate': float(same_close.mean()) if len(same_close) else None,
+              'same_sign_close_h2_rate': float(same_close.mean()),
               'valid_nonzero_open_h2': int(valid_open.sum()),
               'same_sign_open_h2': int(same_open.sum()),
               'opposite_sign_open_h2': int((~same_open).sum()),
-              'same_sign_open_h2_rate': float(same_open.mean()) if len(same_open) else None,
+              'same_sign_open_h2_rate': float(same_open.mean()),
+              'quarter_join_rows': int(m['ht_margin'].notna().sum()),
+              'h2_abs_gt_20': int((m['2H_HomeSpread'].abs() > 20).sum()),
+              'h2_abs_gt_30': int((m['2H_HomeSpread'].abs() > 30).sum()),
+              'h2_abs_gt_50': int((m['2H_HomeSpread'].abs() > 50).sum()),
+              'h2_over_lt_60': int((m['2H_Over'] < 60).sum()),
+              'h2_over_gt_150': int((m['2H_Over'] > 150).sum()),
+              'flip_stats': stats(flip),
+              'no_flip_stats': stats(noflip),
+              'dev_rows_2013_2017': int(((df['_date'] >= '2013-07-01') & (df['_date'] < '2017-07-01')).sum()),
           }
 
-          inspect_cols = [c for c in [
+          # Directional sanity: after a strongly surprising first half, how often does H2 sign flip?
+          for threshold in [5, 10, 15, 20]:
+              elig = m[mv & m['ht_margin_surprise_vs_fullgame_half'].notna() & (m['ht_margin_surprise_vs_fullgame_half'].abs() >= threshold)]
+              summary[f'flip_rate_abs_ht_surprise_ge_{threshold}'] = float(elig['sign_flip_close_to_h2'].mean()) if len(elig) else None
+              summary[f'n_abs_ht_surprise_ge_{threshold}'] = int(len(elig))
+
+          inspect_cols = [
               'GAME_ID','Date','HomeTeam','AwayTeam','HomeSpread_AtOpen','HomeSpread_AtClose',
-              'Over_AtOpen','Over_AtClose','HomeML','AwayML','2H_HomeSpread','2H_Over'
-          ] if c in df.columns]
+              '2H_HomeSpread','Over_AtClose','2H_Over','ht_home','ht_away','ht_margin',
+              'pregame_home_expected_margin','h2_home_expected_margin','ht_margin_surprise_vs_fullgame_half',
+              'second_half_margin_no_ot','second_half_margin_with_ot','sign_flip_close_to_h2'
+          ]
+          m.loc[m['sign_flip_close_to_h2'], inspect_cols].head(500).to_csv('research/v09_flip_examples_with_halftime.csv', index=False)
+          m.loc[m['2H_HomeSpread'].abs() > 20, inspect_cols].to_csv('research/v09_extreme_h2_spread_rows.csv', index=False)
+          m.loc[(m['_date'] >= '2013-07-01') & (m['_date'] < '2017-07-01'), inspect_cols].to_csv('research/v09_dev_joined.csv', index=False)
 
-          if valid_close.any():
-              opposite_idx = same_close.index[~same_close]
-              df.loc[opposite_idx, inspect_cols].head(200).to_csv(
-                  'research/v09_opposite_sign_examples.csv', index=False
-              )
-
-          df[inspect_cols].head(50).to_csv('research/v09_betting_head.csv', index=False)
-          if date_col:
-              dev = df[(df['_date'] >= '2013-07-01') & (df['_date'] < '2017-07-01')]
-              dev[inspect_cols].to_csv('research/v09_dev_betting.csv', index=False)
-              summary['dev_rows_2013_2017'] = int(len(dev))
-
-          Path('research/v09_h2_source_audit.json').write_text(
-              json.dumps(summary, indent=2, ensure_ascii=False), encoding='utf-8'
-          )
+          Path('research/v09_h2_source_audit.json').write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding='utf-8')
           print(json.dumps(summary, indent=2))
           con.close()
           PY
@@ -108,5 +148,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add research/v09_*
-          git commit -m "Record v0.9 original SQLite H2 audit" || exit 0
+          git commit -m "Extend v0.9 H2 source audit with halftime checks" || exit 0
           git push origin HEAD:research/v09-h2-audit
