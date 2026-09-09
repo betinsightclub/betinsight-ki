@@ -1,173 +1,298 @@
 {
-  "rows_regular_joined": 17114,
   "filters": {
-    "baseline_only": {
+    "all_context_nonnull": {
       "2017/18": {
         "n": 1230,
         "target_n": 1230,
-        "n_error": 0,
         "rmse": 9.883179436414059,
         "target_rmse": 9.883179436414059,
-        "rmse_abs_error": 0.0
+        "n_error": 0,
+        "rmse_error": 0.0
       },
       "2018/19": {
         "n": 1230,
         "target_n": 1230,
-        "n_error": 0,
         "rmse": 10.19949385002746,
         "target_rmse": 10.19949385002746,
-        "rmse_abs_error": 0.0
-      },
-      "2019/20": {
-        "n": 1059,
-        "target_n": 1054,
-        "n_error": 5,
-        "rmse": 10.357445443232482,
-        "target_rmse": 10.337244979978518,
-        "rmse_abs_error": 0.020200463253964074
-      },
-      "2020/21": {
-        "n": 1079,
-        "target_n": 1075,
-        "n_error": 4,
-        "rmse": 10.477509138748038,
-        "target_rmse": 10.484913874395364,
-        "rmse_abs_error": 0.007404735647325467
-      },
-      "2021/22_partial": {
-        "n": 456,
-        "target_n": 454,
-        "n_error": 2,
-        "rmse": 10.763728283721653,
-        "target_rmse": 10.785751740306479,
-        "rmse_abs_error": 0.02202345658482585
-      }
-    },
-    "context_core": {
-      "2017/18": {
-        "n": 1230,
-        "target_n": 1230,
         "n_error": 0,
-        "rmse": 9.883179436414059,
-        "target_rmse": 9.883179436414059,
-        "rmse_abs_error": 0.0
-      },
-      "2018/19": {
-        "n": 1230,
-        "target_n": 1230,
-        "n_error": 0,
-        "rmse": 10.19949385002746,
-        "target_rmse": 10.19949385002746,
-        "rmse_abs_error": 0.0
+        "rmse_error": 0.0
       },
       "2019/20": {
         "n": 1058,
         "target_n": 1054,
-        "n_error": 4,
         "rmse": 10.348362700737317,
         "target_rmse": 10.337244979978518,
-        "rmse_abs_error": 0.01111772075879891
+        "n_error": 4,
+        "rmse_error": 0.01111772075879891
       },
       "2020/21": {
         "n": 1079,
         "target_n": 1075,
-        "n_error": 4,
         "rmse": 10.477509138748038,
         "target_rmse": 10.484913874395364,
-        "rmse_abs_error": 0.007404735647325467
+        "n_error": 4,
+        "rmse_error": -0.007404735647325467
       },
       "2021/22_partial": {
         "n": 456,
         "target_n": 454,
-        "n_error": 2,
         "rmse": 10.763728283721653,
         "target_rmse": 10.785751740306479,
-        "rmse_abs_error": 0.02202345658482585
+        "n_error": 2,
+        "rmse_error": -0.02202345658482585
       }
     },
-    "context_all_odds": {
+    "h2_spread_nonzero": {
+      "2017/18": {
+        "n": 1185,
+        "target_n": 1230,
+        "rmse": 9.927543409296174,
+        "target_rmse": 9.883179436414059,
+        "n_error": -45,
+        "rmse_error": 0.04436397288211502
+      },
+      "2018/19": {
+        "n": 1171,
+        "target_n": 1230,
+        "rmse": 10.273356052297826,
+        "target_rmse": 10.19949385002746,
+        "n_error": -59,
+        "rmse_error": 0.07386220227036588
+      },
+      "2019/20": {
+        "n": 1000,
+        "target_n": 1054,
+        "rmse": 10.388587488200693,
+        "target_rmse": 10.337244979978518,
+        "n_error": -54,
+        "rmse_error": 0.051342508222175454
+      },
+      "2020/21": {
+        "n": 1056,
+        "target_n": 1075,
+        "rmse": 10.439339357752758,
+        "target_rmse": 10.484913874395364,
+        "n_error": -19,
+        "rmse_error": -0.045574516642606255
+      },
+      "2021/22_partial": {
+        "n": 446,
+        "target_n": 454,
+        "rmse": 10.701638325812652,
+        "target_rmse": 10.785751740306479,
+        "n_error": -8,
+        "rmse_error": -0.08411341449382626
+      }
+    },
+    "h2_total_nonzero": {
       "2017/18": {
         "n": 1230,
         "target_n": 1230,
-        "n_error": 0,
         "rmse": 9.883179436414059,
         "target_rmse": 9.883179436414059,
-        "rmse_abs_error": 0.0
+        "n_error": 0,
+        "rmse_error": 0.0
       },
       "2018/19": {
         "n": 1230,
         "target_n": 1230,
-        "n_error": 0,
         "rmse": 10.19949385002746,
         "target_rmse": 10.19949385002746,
-        "rmse_abs_error": 0.0
+        "n_error": 0,
+        "rmse_error": 0.0
       },
       "2019/20": {
         "n": 1058,
         "target_n": 1054,
-        "n_error": 4,
         "rmse": 10.348362700737317,
         "target_rmse": 10.337244979978518,
-        "rmse_abs_error": 0.01111772075879891
+        "n_error": 4,
+        "rmse_error": 0.01111772075879891
       },
       "2020/21": {
         "n": 1079,
         "target_n": 1075,
-        "n_error": 4,
         "rmse": 10.477509138748038,
         "target_rmse": 10.484913874395364,
-        "rmse_abs_error": 0.007404735647325467
+        "n_error": 4,
+        "rmse_error": -0.007404735647325467
       },
       "2021/22_partial": {
         "n": 456,
         "target_n": 454,
-        "n_error": 2,
         "rmse": 10.763728283721653,
         "target_rmse": 10.785751740306479,
-        "rmse_abs_error": 0.02202345658482585
+        "n_error": 2,
+        "rmse_error": -0.02202345658482585
       }
     },
-    "context_no_open_total": {
+    "h2_both_nonzero": {
+      "2017/18": {
+        "n": 1185,
+        "target_n": 1230,
+        "rmse": 9.927543409296174,
+        "target_rmse": 9.883179436414059,
+        "n_error": -45,
+        "rmse_error": 0.04436397288211502
+      },
+      "2018/19": {
+        "n": 1171,
+        "target_n": 1230,
+        "rmse": 10.273356052297826,
+        "target_rmse": 10.19949385002746,
+        "n_error": -59,
+        "rmse_error": 0.07386220227036588
+      },
+      "2019/20": {
+        "n": 1000,
+        "target_n": 1054,
+        "rmse": 10.388587488200693,
+        "target_rmse": 10.337244979978518,
+        "n_error": -54,
+        "rmse_error": 0.051342508222175454
+      },
+      "2020/21": {
+        "n": 1056,
+        "target_n": 1075,
+        "rmse": 10.439339357752758,
+        "target_rmse": 10.484913874395364,
+        "n_error": -19,
+        "rmse_error": -0.045574516642606255
+      },
+      "2021/22_partial": {
+        "n": 446,
+        "target_n": 454,
+        "rmse": 10.701638325812652,
+        "target_rmse": 10.785751740306479,
+        "n_error": -8,
+        "rmse_error": -0.08411341449382626
+      }
+    },
+    "totals_nonzero": {
       "2017/18": {
         "n": 1230,
         "target_n": 1230,
-        "n_error": 0,
         "rmse": 9.883179436414059,
         "target_rmse": 9.883179436414059,
-        "rmse_abs_error": 0.0
+        "n_error": 0,
+        "rmse_error": 0.0
       },
       "2018/19": {
         "n": 1230,
         "target_n": 1230,
-        "n_error": 0,
         "rmse": 10.19949385002746,
         "target_rmse": 10.19949385002746,
-        "rmse_abs_error": 0.0
+        "n_error": 0,
+        "rmse_error": 0.0
       },
       "2019/20": {
         "n": 1058,
         "target_n": 1054,
-        "n_error": 4,
         "rmse": 10.348362700737317,
         "target_rmse": 10.337244979978518,
-        "rmse_abs_error": 0.01111772075879891
+        "n_error": 4,
+        "rmse_error": 0.01111772075879891
       },
       "2020/21": {
         "n": 1079,
         "target_n": 1075,
-        "n_error": 4,
         "rmse": 10.477509138748038,
         "target_rmse": 10.484913874395364,
-        "rmse_abs_error": 0.007404735647325467
+        "n_error": 4,
+        "rmse_error": -0.007404735647325467
       },
       "2021/22_partial": {
         "n": 456,
         "target_n": 454,
-        "n_error": 2,
         "rmse": 10.763728283721653,
         "target_rmse": 10.785751740306479,
-        "rmse_abs_error": 0.02202345658482585
+        "n_error": 2,
+        "rmse_error": -0.02202345658482585
       }
+    },
+    "all_odds_nonzero": {
+      "2017/18": {
+        "n": 1141,
+        "target_n": 1230,
+        "rmse": 9.896074789095724,
+        "target_rmse": 9.883179436414059,
+        "n_error": -89,
+        "rmse_error": 0.012895352681665528
+      },
+      "2018/19": {
+        "n": 1126,
+        "target_n": 1230,
+        "rmse": 10.277359189039412,
+        "target_rmse": 10.19949385002746,
+        "n_error": -104,
+        "rmse_error": 0.07786533901195192
+      },
+      "2019/20": {
+        "n": 961,
+        "target_n": 1054,
+        "rmse": 10.431145331364023,
+        "target_rmse": 10.337244979978518,
+        "n_error": -93,
+        "rmse_error": 0.09390035138550523
+      },
+      "2020/21": {
+        "n": 1024,
+        "target_n": 1075,
+        "rmse": 10.431003562800102,
+        "target_rmse": 10.484913874395364,
+        "n_error": -51,
+        "rmse_error": -0.05391031159526172
+      },
+      "2021/22_partial": {
+        "n": 423,
+        "target_n": 454,
+        "rmse": 10.444628064202535,
+        "target_rmse": 10.785751740306479,
+        "n_error": -31,
+        "rmse_error": -0.341123676103944
+      }
+    }
+  },
+  "zero_patterns": {
+    "2017/18": {
+      "HomeSpread_AtOpen": 38,
+      "HomeSpread_AtClose": 10,
+      "Over_AtOpen": 0,
+      "Over_AtClose": 0,
+      "2H_HomeSpread": 45,
+      "2H_Over": 0
+    },
+    "2018/19": {
+      "HomeSpread_AtOpen": 36,
+      "HomeSpread_AtClose": 18,
+      "Over_AtOpen": 0,
+      "Over_AtClose": 0,
+      "2H_HomeSpread": 59,
+      "2H_Over": 0
+    },
+    "2019/20": {
+      "HomeSpread_AtOpen": 29,
+      "HomeSpread_AtClose": 19,
+      "Over_AtOpen": 0,
+      "Over_AtClose": 0,
+      "2H_HomeSpread": 58,
+      "2H_Over": 0
+    },
+    "2020/21": {
+      "HomeSpread_AtOpen": 24,
+      "HomeSpread_AtClose": 9,
+      "Over_AtOpen": 0,
+      "Over_AtClose": 0,
+      "2H_HomeSpread": 23,
+      "2H_Over": 0
+    },
+    "2021/22_partial": {
+      "HomeSpread_AtOpen": 15,
+      "HomeSpread_AtClose": 9,
+      "Over_AtOpen": 0,
+      "Over_AtClose": 0,
+      "2H_HomeSpread": 10,
+      "2H_Over": 0
     }
   }
 }
