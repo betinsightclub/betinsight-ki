@@ -64,7 +64,7 @@ jobs:
               SELECT GAME_ID,
                      PTS_QTR1_HOME, PTS_QTR2_HOME, PTS_QTR3_HOME, PTS_QTR4_HOME,
                      PTS_QTR1_AWAY, PTS_QTR2_AWAY, PTS_QTR3_AWAY, PTS_QTR4_AWAY,
-                     PTS_HOME_y, PTS_AWAY_y
+                     PTS_HOME_y, PTS_AWAY
               FROM Game_FullDetails
           ''', con)
           for c in q.columns:
@@ -74,7 +74,7 @@ jobs:
           q['ht_margin'] = q['ht_home'] - q['ht_away']
           q['ht_total'] = q['ht_home'] + q['ht_away']
           q['second_half_margin_no_ot'] = (q['PTS_QTR3_HOME'] + q['PTS_QTR4_HOME']) - (q['PTS_QTR3_AWAY'] + q['PTS_QTR4_AWAY'])
-          q['second_half_margin_with_ot'] = (q['PTS_HOME_y'] - q['PTS_AWAY_y']) - q['ht_margin']
+          q['second_half_margin_with_ot'] = (q['PTS_HOME_y'] - q['PTS_AWAY']) - q['ht_margin']
           q = q.drop_duplicates('GAME_ID')
           m = df.merge(q, on='GAME_ID', how='left')
 
@@ -122,7 +122,6 @@ jobs:
               'dev_rows_2013_2017': int(((df['_date'] >= '2013-07-01') & (df['_date'] < '2017-07-01')).sum()),
           }
 
-          # Directional sanity: after a strongly surprising first half, how often does H2 sign flip?
           for threshold in [5, 10, 15, 20]:
               elig = m[mv & m['ht_margin_surprise_vs_fullgame_half'].notna() & (m['ht_margin_surprise_vs_fullgame_half'].abs() >= threshold)]
               summary[f'flip_rate_abs_ht_surprise_ge_{threshold}'] = float(elig['sign_flip_close_to_h2'].mean()) if len(elig) else None
