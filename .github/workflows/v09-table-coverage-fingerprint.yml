@@ -1,0 +1,112 @@
+name: v0.9 SQLite table coverage fingerprint
+
+on:
+  push:
+    branches:
+      - research/v09-h2-audit
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/v09-h2-audit
+      - name: Download original database
+        run: |
+          mkdir -p /tmp/v09db research
+          curl -L --fail --retry 3 https://raw.githubusercontent.com/PranavSitaraman/NBA-Injury-Betting/main/basketball-final.sqlite.zip -o /tmp/v09db/db.zip
+          unzip -o /tmp/v09db/db.zip -d /tmp/v09db
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy
+      - name: Compare GAME_ID table coverage to v0.9 sample
+        run: |
+          python - <<'PY'
+          import sqlite3, json
+          from pathlib import Path
+          import pandas as pd
+          import numpy as np
+
+          con=sqlite3.connect('/tmp/v09db/basketball-final.sqlite')
+          odds=pd.read_sql_query('''SELECT GAME_ID,Date,HomeSpread_AtOpen,HomeSpread_AtClose,Over_AtOpen,Over_AtClose,`2H_HomeSpread`,`2H_Over` FROM BettingOdds_History''',con)
+          regular=pd.read_sql_query('SELECT DISTINCT GAME_ID FROM Game',con)
+          q=pd.read_sql_query('''SELECT GAME_ID,PTS_QTR1_HOME,PTS_QTR2_HOME,PTS_QTR1_AWAY,PTS_QTR2_AWAY,PTS_HOME_y,PTS_AWAY FROM Game_FullDetails''',con).drop_duplicates('GAME_ID')
+          odds['Date']=pd.to_datetime(odds.Date,errors='coerce')
+          num=['HomeSpread_AtOpen','HomeSpread_AtClose','Over_AtOpen','Over_AtClose','2H_HomeSpread','2H_Over']
+          for c in num: odds[c]=pd.to_numeric(odds[c],errors='coerce')
+          for c in q.columns:
+            if c!='GAME_ID': q[c]=pd.to_numeric(q[c],errors='coerce')
+          base=odds.merge(regular,on='GAME_ID').merge(q,on='GAME_ID')
+          base['ht_margin']=(base.PTS_QTR1_HOME+base.PTS_QTR2_HOME)-(base.PTS_QTR1_AWAY+base.PTS_QTR2_AWAY)
+          base['actual2h']=(base.PTS_HOME_y-base.PTS_AWAY)-base.ht_margin
+          req=num+['ht_margin','actual2h']
+          base=base.dropna(subset=req).drop_duplicates('GAME_ID').copy()
+
+          periods={
+            '2017/18':('2017-07-01','2018-07-01',1230),
+            '2018/19':('2018-07-01','2019-07-01',1230),
+            '2019/20':('2019-07-01','2020-10-01',1054),
+            '2020/21':('2020-10-01','2021-08-01',1075),
+            '2021/22_partial':('2021-08-01','2021-12-21',454),
+          }
+          targets={k:v[2] for k,v in periods.items()}
+          base_counts={k:int(((base.Date>=lo)&(base.Date<hi)).sum()) for k,(lo,hi,_) in periods.items()}
+
+          tables=pd.read_sql_query("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name",con)['name'].tolist()
+          rows=[]
+          idsets={}
+          for t in tables:
+            info=pd.read_sql_query(f'PRAGMA table_info("{t}")',con)
+            cols=info['name'].tolist()
+            if 'GAME_ID' not in cols: continue
+            try:
+              ids=pd.read_sql_query(f'SELECT DISTINCT GAME_ID FROM "{t}" WHERE GAME_ID IS NOT NULL',con)
+            except Exception:
+              continue
+            ids=ids.dropna().drop_duplicates()
+            idsets[t]=set(ids.GAME_ID.astype(str))
+            z=base[base.GAME_ID.astype(str).isin(idsets[t])]
+            rec={'table':t,'distinct_game_ids':int(len(ids)),'base_intersection':int(len(z))}
+            score=0
+            for season,(lo,hi,target) in periods.items():
+              n=int(((z.Date>=lo)&(z.Date<hi)).sum())
+              rec[season]=n
+              rec[season+'_err']=n-target
+              score+=abs(n-target)
+            rec['target_abs_error_sum']=score
+            rows.append(rec)
+          outdf=pd.DataFrame(rows).sort_values(['target_abs_error_sum','table'])
+          outdf.to_csv('research/v09_table_coverage_fingerprint.csv',index=False)
+
+          # Also test pairwise intersections among the best single tables (plus base).
+          best=outdf.head(20)['table'].tolist()
+          pairrows=[]
+          for i,a in enumerate(best):
+            for b in best[i+1:]:
+              common=idsets[a] & idsets[b]
+              z=base[base.GAME_ID.astype(str).isin(common)]
+              rec={'table_a':a,'table_b':b,'base_intersection':int(len(z))}
+              score=0
+              for season,(lo,hi,target) in periods.items():
+                n=int(((z.Date>=lo)&(z.Date<hi)).sum())
+                rec[season]=n; rec[season+'_err']=n-target; score+=abs(n-target)
+              rec['target_abs_error_sum']=score
+              pairrows.append(rec)
+          pairdf=pd.DataFrame(pairrows).sort_values(['target_abs_error_sum','table_a','table_b'])
+          pairdf.to_csv('research/v09_table_pair_coverage_fingerprint.csv',index=False)
+          summary={'base_clean_rows':int(len(base)),'base_counts':base_counts,'targets':targets,'best_single':outdf.head(15).to_dict(orient='records'),'best_pairs':pairdf.head(15).to_dict(orient='records')}
+          Path('research/v09_table_coverage_fingerprint.json').write_text(json.dumps(summary,indent=2),encoding='utf-8')
+          print(json.dumps(summary,indent=2))
+          con.close()
+          PY
+      - name: Commit outputs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/v09_table_*coverage_fingerprint.*
+          git commit -m "Record v0.9 SQLite table coverage fingerprint" || exit 0
+          git push origin HEAD:research/v09-h2-audit
