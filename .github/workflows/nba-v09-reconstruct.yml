@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 jobs:
-  baseline-audit:
+  sqlite-audit:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -21,9 +21,5 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install dependencies
-        run: python -m pip install --disable-pip-version-check pandas numpy
-      - name: Run normalized CSV audit
-        run: python research/nba_v09_baseline_audit.py
-      - name: Run raw SBR pair checksum audit
-        run: python research/nba_v09_rawpair_audit.py
+      - name: Download and inspect original basketball SQLite
+        run: python research/nba_v09_sqlite_audit.py
