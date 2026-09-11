@@ -31,8 +31,6 @@ def build_raw(label, cfg):
     for i in range(0, len(d) - 1, 2):
         a, h = d.iloc[i], d.iloc[i + 1]
         va, vh = str(a.get("VH", "")).strip().upper(), str(h.get("VH", "")).strip().upper()
-        # Normal game = V/H. Neutral-site game = N/N, but SBR still keeps the first/second row
-        # in the same two-team ordering used by the normalized source.
         if (va, vh) not in {("V", "H"), ("N", "N")}:
             bad.append((i, "VH", va, vh)); continue
         try:
@@ -76,9 +74,13 @@ for label, cfg in SEASONS.items():
     raw, bad = build_raw(label, cfg)
     ns = norm_subset(norm, cfg)
     err = raw["actual"] - raw["expected"]
-    r = float(np.sqrt(np.mean(np.square(err))))
+    sse = float(np.sum(np.square(err)))
+    r = float(np.sqrt(sse/len(raw)))
+    target_sse = cfg["target_rmse"] ** 2 * cfg["target_n"]
+    required_delta = target_sse - sse
     print("\nSEASON", label)
     print("RAW_N", len(raw), "NORM_N", len(ns), "TARGET_N", cfg["target_n"], "BAD", len(bad))
+    print("SSE", repr(sse), "TARGET_SSE", repr(target_sse), "REQUIRED_SSE_DELTA", repr(required_delta))
     print("RMSE", repr(r), "TARGET", repr(cfg["target_rmse"]), "DELTA", repr(r-cfg["target_rmse"]))
     print("RMSE_CLOSE_1E12", abs(r-cfg["target_rmse"]) < 1e-12)
     print("NEUTRAL", raw[raw["vh_pair"]=="NN"].to_string(index=False))
@@ -96,10 +98,34 @@ for label, cfg in SEASONS.items():
         mismatch = cmp[(cmp.raw_date != cmp.norm_date) | (~np.isclose(cmp.raw_h2, cmp.norm_h2, equal_nan=True)) | (~np.isclose(cmp.raw_actual, cmp.norm_actual, equal_nan=True))]
         print("SEQUENCE_MISMATCHES", len(mismatch))
         if len(mismatch): print(mismatch.head(50).to_string(index=False))
-        # Also show games where the 2H favorite differs from the pregame favorite; this is the information
-        # lost by the normalized unsigned h2_spread field.
         norm_homefav = ns["whos_favored"].astype(str).str.lower().eq("home").to_numpy()
         raw_homefav = raw["spread_side"].eq("home").to_numpy()
         flips = np.where(norm_homefav != raw_homefav)[0]
         print("PREGAME_TO_2H_FAVORITE_FLIPS", len(flips), "SAMPLE", flips[:30].tolist())
+
+        # If exactly one raw 2H side were inverted versus the SQLite convention,
+        # flipping expected -> -expected changes SSE by 4*actual*expected.
+        c = raw.copy()
+        c["flip_sse_delta"] = 4.0 * c["actual"] * c["expected"]
+        hit = c[np.isclose(c["flip_sse_delta"], required_delta, atol=1e-9)].copy()
+        if len(hit):
+            hit["norm_date_iso"] = ns.loc[hit.index, "date"].to_numpy()
+            hit["away_norm"] = ns.loc[hit.index, "away"].to_numpy()
+            hit["home_norm"] = ns.loc[hit.index, "home"].to_numpy()
+            hit["preg_favored"] = ns.loc[hit.index, "whos_favored"].to_numpy()
+            hit["id_spread"] = ns.loc[hit.index, "id_spread"].to_numpy()
+            hit["id_total"] = ns.loc[hit.index, "id_total"].to_numpy()
+            print("SINGLE_SIGN_FLIP_EXACT_CANDIDATES", len(hit))
+            print(hit[["norm_date_iso","away_norm","home_norm","away_raw","home_raw","spread_side","h2_mag","expected","actual","flip_sse_delta","preg_favored","id_spread","id_total"]].to_string(index=False))
+        else:
+            print("SINGLE_SIGN_FLIP_EXACT_CANDIDATES 0")
+            near = c.iloc[(c["flip_sse_delta"]-required_delta).abs().argsort()[:20]].copy()
+            near["norm_date_iso"] = ns.loc[near.index, "date"].to_numpy()
+            near["away_norm"] = ns.loc[near.index, "away"].to_numpy()
+            near["home_norm"] = ns.loc[near.index, "home"].to_numpy()
+            print("NEAREST_SIGN_FLIP_CANDIDATES")
+            print(near[["norm_date_iso","away_norm","home_norm","spread_side","h2_mag","expected","actual","flip_sse_delta"]].to_string(index=False))
+
+        print("ID_SPREAD_VALUE_COUNTS", ns["id_spread"].value_counts(dropna=False).head(30).to_dict())
+        print("ID_TOTAL_VALUE_COUNTS", ns["id_total"].value_counts(dropna=False).head(30).to_dict())
     print(raw.head(8).to_string(index=False))
