@@ -1,0 +1,27 @@
+name: NBA v0.9 reconstruction audit
+
+on:
+  push:
+    branches:
+      - research/nba-v09-reconstruct
+    paths:
+      - 'research/**'
+      - '.github/workflows/nba-v09-reconstruct.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  baseline-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy
+      - name: Run baseline checksum audit
+        run: python research/nba_v09_baseline_audit.py
