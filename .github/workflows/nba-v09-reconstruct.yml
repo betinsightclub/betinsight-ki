@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 jobs:
-  sqlite-audit:
+  exact-baseline:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -21,5 +21,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Download and inspect original basketball SQLite
-        run: python research/nba_v09_sqlite_audit.py
+      - name: Install analysis dependencies
+        run: python -m pip install --disable-pip-version-check pandas numpy
+      - name: Reproduce exact stored baselines from SQLite
+        run: python research/nba_v09_exact_baseline.py
