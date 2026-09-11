@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 jobs:
-  exact-baseline:
+  filter-audit:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -23,5 +23,5 @@ jobs:
           python-version: '3.11'
       - name: Install analysis dependencies
         run: python -m pip install --disable-pip-version-check pandas numpy
-      - name: Reproduce exact stored baselines from SQLite
-        run: python research/nba_v09_exact_baseline.py
+      - name: Reconstruct historical clean-data filters
+        run: python research/nba_v09_filter_audit.py
