@@ -44,15 +44,15 @@ con.close()
 print("ODDS_ROWS", len(odds), "DETAIL_ROWS", len(det), "DETAIL_DUP_GAME_IDS", int(det.duplicated('GAME_ID').sum()))
 
 det = det.drop_duplicates('GAME_ID', keep='first').copy()
-df = odds.merge(det, on='GAME_ID', how='left', validate='one_to_one')
+# Legacy odds contain repeated placeholder GAME_ID='00'. The score side is unique after dedupe,
+# so many-to-one is the correct validation and does not change any modern game row.
+df = odds.merge(det, on='GAME_ID', how='left', validate='many_to_one')
 df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
 for c in ['PTS_QTR1_HOME','PTS_QTR2_HOME','PTS_QTR3_HOME','PTS_QTR4_HOME','PTS_HOME_y',
           'PTS_QTR1_AWAY','PTS_QTR2_AWAY','PTS_QTR3_AWAY','PTS_QTR4_AWAY','2H_HomeSpread']:
     df[c] = pd.to_numeric(df[c], errors='coerce')
 
 df['ht_home_margin'] = (df['PTS_QTR1_HOME'] + df['PTS_QTR2_HOME']) - (df['PTS_QTR1_AWAY'] + df['PTS_QTR2_AWAY'])
-# Home final points are in PTS_HOME_y; away final can be reconstructed from home final minus the
-# official PLUS/MINUS only if needed, but quarter+OT is safer here. Sum all available regulation/OT periods.
 ot_h = [f'PTS_OT{i}_HOME' for i in range(1,6)]
 ot_a = [f'PTS_OT{i}_AWAY' for i in range(1,6)]
 for c in ot_h + ot_a:
@@ -69,7 +69,6 @@ print("2H_NON_NULL", int(df['2H_HomeSpread'].notna().sum()))
 
 for label, (start, end, target_n, target_rmse) in TARGETS.items():
     s = df[(df['Date'] >= pd.Timestamp(start)) & (df['Date'] <= pd.Timestamp(end))].copy()
-    # Date boundaries are official regular-season boundaries for these seasons, so playoffs are excluded.
     modelable = s.dropna(subset=['actual_2h_home_margin','expected_2h_home_margin']).copy()
     r = float(np.sqrt(np.mean(np.square(modelable['baseline_error']))))
     print("\nSEASON", label)
@@ -77,19 +76,12 @@ for label, (start, end, target_n, target_rmse) in TARGETS.items():
     print("BASELINE_RMSE", repr(r), "TARGET", repr(target_rmse), "ABS_DELTA", repr(abs(r-target_rmse)))
     print("SSE", repr(float(np.sum(np.square(modelable['baseline_error'])))))
     print("EXACT_RMSE_1E12", abs(r-target_rmse) < 1e-12)
-    # surface suspicious decimals/signs and the London neutral games
     if label in {'2017-18','2018-19'}:
         london = modelable[modelable['Date'].isin([pd.Timestamp('2018-01-11'), pd.Timestamp('2019-01-17')])]
         if len(london):
             print("SPECIAL_DATE_ROWS")
             print(london[['GAME_ID','Date','AwayTeam','HomeTeam','2H_HomeSpread','expected_2h_home_margin','actual_2h_home_margin','baseline_error']].to_string(index=False))
 
-# Exact 2017 candidates where raw SBR row-side could differ: print SQLite signs for the 18 checksum candidates.
-cand_dates = [
-'2017-10-31','2017-11-02','2017-11-05','2017-11-18','2017-11-19','2017-11-28','2017-12-13','2017-12-29',
-'2018-01-07','2018-01-12','2018-01-13','2018-01-22','2018-01-24','2018-02-03','2018-02-08','2018-03-03','2018-03-13'
-]
-# Filter by exact teams using the SSE condition itself so same-day unrelated games are excluded.
 c = df[(df['Date'] >= pd.Timestamp('2017-10-17')) & (df['Date'] <= pd.Timestamp('2018-04-11'))].dropna(subset=['actual_2h_home_margin','expected_2h_home_margin']).copy()
 c['flip_delta'] = 4*c['actual_2h_home_margin']*c['expected_2h_home_margin']
 hits = c[np.isclose(c['flip_delta'], -12.0)]
