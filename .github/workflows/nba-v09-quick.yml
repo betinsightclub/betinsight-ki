@@ -17,4 +17,4 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m pip install --disable-pip-version-check pandas numpy scikit-learn
-      - run: python quick/nba_v09_context_superset_search.py
+      - run: python quick/nba_v09_repricing_probe.py
