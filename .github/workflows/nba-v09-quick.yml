@@ -17,4 +17,4 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m pip install --disable-pip-version-check pandas numpy scikit-learn
-      - run: python quick/nba_v09_refit_aggregate_probe.py
+      - run: python quick/nba_v09_spreadmove_context_search.py
