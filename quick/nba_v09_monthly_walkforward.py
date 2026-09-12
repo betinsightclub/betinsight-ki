@@ -91,14 +91,14 @@ def rmse_delta_by_group(pred):
     vals=[]
     for g,z in pred.groupby('group'):
         b=float(np.sqrt(np.mean(z.y.to_numpy()**2)))
-        m=float(np.sqrt(np.mean((z.y.to_numpy()-z.corr.to_numpy())**2)))
+        m=float(np.sqrt(np.mean((z.y.to_numpy()-z['corr'].to_numpy())**2)))
         vals.append((g,len(z),b-m,b,m))
     d=np.array([x[2] for x in vals])
     return (float(d.min()),float(d.mean()),float(np.median(d))),vals
 
 def bet_stats(pred,gate):
-    z=pred[np.abs(pred.corr)>=gate]
-    r=np.sign(z.corr.to_numpy())*z.y.to_numpy()
+    z=pred[np.abs(pred['corr'])>=gate]
+    r=np.sign(z['corr'].to_numpy())*z.y.to_numpy()
     return (len(z),int((r>1e-12).sum()),int((r<-1e-12).sum()),int((np.abs(r)<=1e-12).sum()))
 
 def eval_kind(kind,start_train=None):
@@ -118,12 +118,11 @@ def eval_kind(kind,start_train=None):
     print('OOS_MONTHLY/REFIT')
     for s,t in OOS_TARGET.items():
         z=po[po.season==s]
-        rm=float(np.sqrt(np.mean((z.y.to_numpy()-z.corr.to_numpy())**2)))
+        rm=float(np.sqrt(np.mean((z.y.to_numpy()-z['corr'].to_numpy())**2)))
         b=bet_stats(z,.75)
         print(s,'N',len(z),'RMSE',repr(rm),'BETS',b,'TARGET',t)
 
 for kind in ['month','quarter','week']:
     eval_kind(kind,None)
-# Monthly with the two historically plausible starts most worth fingerprinting.
 for st in ['2008-10-28','2010-10-26']:
     eval_kind('month',st)
