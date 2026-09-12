@@ -43,9 +43,9 @@ def fit(X,tr,te,a):
 
 def group_key(date,mode):
     if mode=='season': return None
-    if mode=='month': return date.to_period('M').astype(str)
-    if mode=='week': return date.to_period('W-SUN').astype(str)
-    if mode=='quarter': return date.to_period('Q').astype(str)
+    if mode=='month': return date.dt.to_period('M').astype(str)
+    if mode=='week': return date.dt.to_period('W-SUN').astype(str)
+    if mode=='quarter': return date.dt.to_period('Q').astype(str)
     if mode=='30d':
         origin=pd.Timestamp('2007-10-30'); return ((date-origin).dt.days//30).astype(str)
     raise ValueError(mode)
