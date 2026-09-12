@@ -17,4 +17,4 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m pip install --disable-pip-version-check pandas numpy scikit-learn
-      - run: python quick/nba_v09_inverse_alpha_gain_diagnostic.py
+      - run: python quick/nba_v09_scaler_convention_probe.py
